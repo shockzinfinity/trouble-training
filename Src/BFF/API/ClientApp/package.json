@@ -61,6 +61,8 @@
     "startwatch": "npm run watch:css && craco start start",
     "start": "craco start",
     "build": "craco build",
+    "start_node17": "cross-env NODE_OPTIONS=--openssl-legacy-provider craco start",
+    "build_node17": "cross-env NODE_OPTIONS=--openssl-legacy-provider craco build",
     "test": "cypress run --config pageLoadTimeout=30000,baseUrl=https://localhost:5015",
     "cypress": "cypress open --config pageLoadTimeout=30000,baseUrl=https://localhost:5015",
     "eject": "react-scripts eject"
@@ -72,7 +74,7 @@
     ]
   },
   "devDependencies": {
-    "@craco/craco": "6.2.0",
+    "@craco/craco": "6.4.3",
     "@cypress/react": "5.10.3",
     "@cypress/webpack-dev-server": "1.7.0",
     "@fortawesome/fontawesome-free": "5.13.0",
@@ -94,6 +96,7 @@
     "autoprefixer": "^9.8.8",
     "babel-plugin-macros": "3.1.0",
     "babel-plugin-relay": "12.0.0",
+    "cross-env": "^7.0.3",
     "cypress": "9.1.0",
     "fs-extra": "9.1.0",
     "har-validator": "5.1.3",

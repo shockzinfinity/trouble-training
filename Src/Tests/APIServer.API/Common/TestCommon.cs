@@ -42,7 +42,8 @@ namespace APIServer.API.IntegrationTests
             this HttpClient client,
             string query,
             object variables = null,
-            IDictionary<string, string> headers = null
+            IDictionary<string, string> headers = null,
+            string gql_endpoint = "/graphql"
         )
         {
 
@@ -72,7 +73,7 @@ namespace APIServer.API.IntegrationTests
                 "application/json"
             );
 
-            var post_response = await client.PostAsync("/graphql", content);
+            var post_response = await client.PostAsync(gql_endpoint, content);
 
             client.DefaultRequestHeaders.Clear();
 

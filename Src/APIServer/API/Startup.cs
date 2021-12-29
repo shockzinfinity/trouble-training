@@ -53,6 +53,8 @@ namespace APIServer
 
             services.AddMemoryCache();
 
+            services.AddMapper();
+
             ConfigureTelemetry(services);
 
             services.AddScoped<ICurrentUser, CurrentUser>();
@@ -64,7 +66,6 @@ namespace APIServer
             services.AddSingleton(Serilog.Log.Logger);
 
             services.AddSSLCertHanlder(Environment);
-
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -121,7 +122,6 @@ namespace APIServer
                     pattern: "{controller}/{action=Index}/{id?}");
             });
         }
-
 
         public virtual void ConfigureDBContext(IServiceCollection services)
         {

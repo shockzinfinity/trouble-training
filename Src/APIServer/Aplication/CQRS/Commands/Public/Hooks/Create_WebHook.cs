@@ -1,4 +1,5 @@
 using MediatR;
+using AutoMapper;
 using System.Linq;
 using System.Threading;
 using FluentValidation;
@@ -11,6 +12,7 @@ using APIServer.Aplication.Shared;
 using SharedCore.Aplication.Payload;
 using Microsoft.EntityFrameworkCore;
 using SharedCore.Aplication.Services;
+using APIServer.Aplication.GraphQL.DTO;
 using SharedCore.Aplication.Interfaces;
 using SharedCore.Aplication.Core.Commands;
 using APIServer.Domain.Core.Models.WebHooks;
@@ -18,10 +20,8 @@ using APIServer.Aplication.Shared.Behaviours;
 using SharedCore.Aplication.Shared.Attributes;
 using APIServer.Aplication.Notifications.WebHooks;
 
-
 namespace APIServer.Aplication.Commands.WebHooks
 {
-
     /// <summary>
     /// Command for creating webhook
     /// </summary>
@@ -58,7 +58,6 @@ namespace APIServer.Aplication.Commands.WebHooks
     /// </summary>
     public class CreateWebHookValidator : AbstractValidator<CreateWebHook>
     {
-
         private readonly IDbContextFactory<ApiDbContext> _factory;
 
         const long MAX_HOOK_COUNT = 10;
@@ -143,7 +142,7 @@ namespace APIServer.Aplication.Commands.WebHooks
         /// <summary>
         /// Created WebHook
         /// </summary>
-        public WebHook hook { get; set; }
+        public GQL_WebHook hook { get; set; }
     }
 
     //---------------------------------------
@@ -154,14 +153,10 @@ namespace APIServer.Aplication.Commands.WebHooks
     {
 
         /// <summary>
-        /// Injected <c>IDbContextFactory<ApiDbContext></c>
+        /// Injected IDbContextFactory of ApiDbContext
         /// </summary>
         private readonly IDbContextFactory<ApiDbContext> _factory;
 
-        /// <summary>
-        /// Injected <c>IPublisher</c>
-        /// </summary>
-        private readonly SharedCore.Aplication.Interfaces.IPublisher _publisher;
 
         /// <summary>
         /// Injected <c>ICurrentUser</c>
@@ -169,17 +164,21 @@ namespace APIServer.Aplication.Commands.WebHooks
         private readonly ICurrentUser _current;
 
         /// <summary>
+        /// Injected <c>IMapper</c>
+        /// </summary>
+        private readonly IMapper _mapper;
+
+        /// <summary>
         /// Main constructor
         /// </summary>
         public CreateWebHookHandler(
             IDbContextFactory<ApiDbContext> factory,
-            SharedCore.Aplication.Interfaces.IPublisher publisher,
-            ICurrentUser currentuser)
+            ICurrentUser currentuser,
+            IMapper mapper)
         {
+            _mapper = mapper;
 
             _factory = factory;
-
-            _publisher = publisher;
 
             _current = currentuser;
         }
@@ -210,7 +209,7 @@ namespace APIServer.Aplication.Commands.WebHooks
 
             var response = CreateWebHookPayload.Success();
 
-            response.hook = hook;
+            response.hook = _mapper.Map<GQL_WebHook>(hook);
 
             return response;
         }
@@ -239,12 +238,9 @@ namespace APIServer.Aplication.Commands.WebHooks
         {
             if (response != null && !response.HasError())
             {
-
                 try
                 {
-
                     // You can extend and add any custom fields to Notification!
-
                     await _publisher.Publish(new WebHookCreatedNotifi()
                     {
                         ActivityId = Activity.Current.Id

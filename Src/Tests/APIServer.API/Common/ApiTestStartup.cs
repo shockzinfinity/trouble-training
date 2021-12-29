@@ -35,8 +35,6 @@ namespace APIServer.API.IntegrationTests
 
             services.AddControllers();
 
-            // services.AddHttpClient();
-
             services.AddHttpContextAccessor();
 
             services.AddPooledDbContextFactory<ApiDbContext>(
@@ -47,6 +45,8 @@ namespace APIServer.API.IntegrationTests
             services.AddScoped<ICurrentUser, CurrentUser>();
 
             services.AddGraphql(Environment);
+
+            services.AddMapper();
 
             services.AddTelemetryService(Configuration, out string source);
 

@@ -1,48 +1,47 @@
 using MediatR;
-using System.Linq;
 using System.Threading;
-using FluentValidation;
-using MediatR.Pipeline;
-using APIServer.Persistence;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using SharedCore.Aplication.Payload;
+using System.Linq;
+using FluentValidation;
+using SharedCore.Aplication.Shared.Attributes;
 using Microsoft.EntityFrameworkCore;
+using APIServer.Persistence;
+using APIServer.Domain.Core.Models.WebHooks;
 using SharedCore.Aplication.Interfaces;
 using APIServer.Aplication.Shared.Errors;
-using APIServer.Domain.Core.Models.WebHooks;
-using SharedCore.Aplication.Shared.Attributes;
+using APIServer.Aplication.Notifications.WebHooks;
+using System.Diagnostics;
+using SharedCore.Aplication.Payload;
+using MediatR.Pipeline;
 using SharedCore.Aplication.Core.Commands;
+using SharedCore.Aplication.Services;
 
 namespace APIServer.Aplication.Commands.WebHooks
 {
 
     /// <summary>
-    /// Command for updating webhook Uri
+    /// Command for removing hook
     /// </summary>
     [Authorize]
-    public class UpdateWebHookTriggerEvents : CommandBase<UpdateWebHookTriggerEventsPayload>
+    public class RemoveWebHook : CommandBase<RemoveWebHookPayload>
     {
 
         /// <summary>WebHook Id </summary>
         public long WebHookId { get; set; }
-
-        /// <summary> HookEvents </summary>y>
-        public HashSet<HookEventType> HookEvents { get; set; }
     }
 
     //---------------------------------------
     //---------------------------------------
 
     /// <summary>
-    /// UpdateWebHookTriggerEvents Validator
+    /// RemoveWebHook Validator
     /// </summary>
-    public class UpdateWebHookTriggerEventsValidator : AbstractValidator<UpdateWebHookTriggerEvents>
+    public class RemoveWebHookValidator : AbstractValidator<RemoveWebHook>
     {
 
         private readonly IDbContextFactory<ApiDbContext> _factory;
 
-        public UpdateWebHookTriggerEventsValidator(IDbContextFactory<ApiDbContext> factory)
+        public RemoveWebHookValidator(IDbContextFactory<ApiDbContext> factory)
         {
             _factory = factory;
 
@@ -50,15 +49,15 @@ namespace APIServer.Aplication.Commands.WebHooks
             .NotNull()
             .GreaterThan(0);
 
-            RuleFor(e => e.HookEvents)
-            .NotNull();
-
             RuleFor(e => e.WebHookId)
             .MustAsync(HookExist)
             .WithMessage("Hook was not found");
         }
 
-        public async Task<bool> HookExist(UpdateWebHookTriggerEvents request, long id, CancellationToken cancellationToken)
+        public async Task<bool> HookExist(
+            RemoveWebHook request,
+            long id,
+            CancellationToken cancellationToken)
         {
 
             await using ApiDbContext dbContext =
@@ -72,27 +71,27 @@ namespace APIServer.Aplication.Commands.WebHooks
     //---------------------------------------
 
     /// <summary>
-    /// IUpdateWebHookTriggerEventsError
+    /// IRemoveWebHookError
     /// </summary>
-    public interface IUpdateWebHookTriggerEventsError { }
+    public interface IRemoveWebHookError { }
 
     /// <summary>
-    /// UpdateWebHookTriggerEventsPayload
+    /// RemoveWebHookPayload
     /// </summary>
-    public class UpdateWebHookTriggerEventsPayload : BasePayload<UpdateWebHookTriggerEventsPayload, IUpdateWebHookTriggerEventsError>
+    public class RemoveWebHookPayload : BasePayload<RemoveWebHookPayload, IRemoveWebHookError>
     {
 
         /// <summary>
-        /// Updated WebHook
+        /// Removed Hook Id
         /// </summary>
-        public WebHook hook { get; set; }
+        public long removed_id { get; set; }
     }
 
     //---------------------------------------
     //---------------------------------------
 
-    /// <summary>Handler for <c>UpdateWebHookTriggerEvents</c> command </summary>
-    public class UpdateWebHookTriggerEventsHandler : IRequestHandler<UpdateWebHookTriggerEvents, UpdateWebHookTriggerEventsPayload>
+    /// <summary>Handler for <c>RemoveWebHook</c> command </summary>
+    public class RemoveWebHookHandler : IRequestHandler<RemoveWebHook, RemoveWebHookPayload>
     {
 
         /// <summary>
@@ -103,55 +102,51 @@ namespace APIServer.Aplication.Commands.WebHooks
         /// <summary>
         /// Injected <c>IMediator</c>
         /// </summary>
-        private readonly IMediator _mediator;
-
-        /// <summary>
-        /// Injected <c>IMediator</c>
-        /// </summary>
         private readonly ICurrentUser _current;
 
         /// <summary>
         /// Main constructor
         /// </summary>
-        public UpdateWebHookTriggerEventsHandler(
+        public RemoveWebHookHandler(
             IDbContextFactory<ApiDbContext> factory,
-            IMediator mediator,
             ICurrentUser currentuser)
         {
 
             _factory = factory;
 
-            _mediator = mediator;
-
             _current = currentuser;
         }
 
         /// <summary>
-        /// Command handler for <c>UpdateWebHookTriggerEvents</c>
+        /// Command handler for <c>RemoveWebHook</c>
         /// </summary>
-        public async Task<UpdateWebHookTriggerEventsPayload> Handle(UpdateWebHookTriggerEvents request, CancellationToken cancellationToken)
+        public async Task<RemoveWebHookPayload> Handle(
+            RemoveWebHook request,
+            CancellationToken cancellationToken)
         {
 
             await using ApiDbContext dbContext =
                 _factory.CreateDbContext();
 
             WebHook wh = await dbContext.WebHooks
-            .TagWith(string.Format("UpdateWebHookTriggerEvents Command - Query Hook"))
+            .TagWith(string.Format("RemoveWebHook Command - Query Hook"))
             .Where(e => e.ID == request.WebHookId)
             .FirstOrDefaultAsync(cancellationToken);
 
             if (wh == null)
             {
-                return UpdateWebHookTriggerEventsPayload.Error(new WebHookNotFound());
+                return RemoveWebHookPayload.Error(new WebHookNotFound());
             }
 
-            wh.HookEvents = request.HookEvents.Distinct().ToArray();
+            long removed_id = wh.ID;
+
+            dbContext.WebHooks.Remove(wh);
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            var response = UpdateWebHookTriggerEventsPayload.Success();
+            var response = RemoveWebHookPayload.Success();
 
-            response.hook = wh;
+            response.removed_id = removed_id;
 
             return response;
         }
@@ -160,32 +155,32 @@ namespace APIServer.Aplication.Commands.WebHooks
     //---------------------------------------
     //---------------------------------------
 
-    public class UpdateWebHookTriggerEventsPostProcessor
-        : IRequestPostProcessor<UpdateWebHookTriggerEvents, UpdateWebHookTriggerEventsPayload>
+    public class RemoveWebHookPostProcessor : IRequestPostProcessor<RemoveWebHook, RemoveWebHookPayload>
     {
         /// <summary>
         /// Injected <c>IPublisher</c>
         /// </summary>
         private readonly SharedCore.Aplication.Interfaces.IPublisher _publisher;
 
-        public UpdateWebHookTriggerEventsPostProcessor(SharedCore.Aplication.Interfaces.IPublisher publisher)
+        public RemoveWebHookPostProcessor(SharedCore.Aplication.Interfaces.IPublisher publisher)
         {
             _publisher = publisher;
         }
 
         public async Task Process(
-            UpdateWebHookTriggerEvents request,
-            UpdateWebHookTriggerEventsPayload response,
+            RemoveWebHook request,
+            RemoveWebHookPayload response,
             CancellationToken cancellationToken)
         {
             if (response != null && !response.HasError())
             {
                 try
                 {
-
-                    await Task.CompletedTask;
-
-                    // Add Notification hire
+                    // You can extend and add any custom fields to Notification!
+                    await _publisher.Publish(new WebHookRemovedNotifi()
+                    {
+                        ActivityId = Activity.Current.Id
+                    }, PublishStrategy.ParallelNoWait, default(CancellationToken));
 
                 }
                 catch { }

@@ -1,47 +1,50 @@
 using MediatR;
-using System.Linq;
 using System.Threading;
-using MediatR.Pipeline;
-using FluentValidation;
-using APIServer.Persistence;
 using System.Threading.Tasks;
-using SharedCore.Aplication.Payload;
+using System.Linq;
+using FluentValidation;
+using SharedCore.Aplication.Shared.Attributes;
 using Microsoft.EntityFrameworkCore;
+using APIServer.Persistence;
+using APIServer.Domain.Core.Models.WebHooks;
 using SharedCore.Aplication.Interfaces;
 using APIServer.Aplication.Shared.Errors;
-using SharedCore.Aplication.Shared.Attributes;
-using APIServer.Domain.Core.Models.WebHooks;
+using SharedCore.Aplication.Payload;
+using MediatR.Pipeline;
 using SharedCore.Aplication.Core.Commands;
+using APIServer.Aplication.GraphQL.DTO;
+using AutoMapper;
 
 namespace APIServer.Aplication.Commands.WebHooks
 {
 
     /// <summary>
-    /// Command for updateing WebHook secret
+    /// Command for updating webhook
     /// </summary>
     [Authorize]
-    public class UpdateWebHookSecret : CommandBase<UpdateWebHookSecretPayload>
+    public class UpdateWebHookActivState : CommandBase<UpdateWebHookActivStatePayload>
     {
 
         /// <summary>WebHook Id </summary>
         public long WebHookId { get; set; }
 
-        /// <summary> Secret </summary>
-        public string Secret { get; set; }
+        /// <summary> IsActive </summary>
+        public bool IsActive { get; set; }
     }
 
     //---------------------------------------
     //---------------------------------------
 
+
     /// <summary>
-    /// UpdateWebHookSecret Validator
+    /// UpdateWebHookActivState Validator
     /// </summary>
-    public class UpdateWebHookSecretValidator : AbstractValidator<UpdateWebHookSecret>
+    public class UpdateWebHookActivStateValidator : AbstractValidator<UpdateWebHookActivState>
     {
 
         private readonly IDbContextFactory<ApiDbContext> _factory;
 
-        public UpdateWebHookSecretValidator(IDbContextFactory<ApiDbContext> factory)
+        public UpdateWebHookActivStateValidator(IDbContextFactory<ApiDbContext> factory)
         {
             _factory = factory;
 
@@ -49,15 +52,15 @@ namespace APIServer.Aplication.Commands.WebHooks
             .NotNull()
             .GreaterThan(0);
 
-            RuleFor(e => e.Secret)
-            .MaximumLength(1000);
-
             RuleFor(e => e.WebHookId)
             .MustAsync(HookExist)
             .WithMessage("Hook was not found");
         }
 
-        public async Task<bool> HookExist(UpdateWebHookSecret request, long id, CancellationToken cancellationToken)
+        public async Task<bool> HookExist(
+            UpdateWebHookActivState request,
+            long id,
+            CancellationToken cancellationToken)
         {
 
             await using ApiDbContext dbContext =
@@ -70,29 +73,32 @@ namespace APIServer.Aplication.Commands.WebHooks
     //---------------------------------------
     //---------------------------------------
 
-    /// <summary>
-    /// IUpdateWebHookSecretError
-    /// </summary>
-    public interface IUpdateWebHookSecretError { }
 
     /// <summary>
-    /// UpdateWebHookSecretPayload
+    /// IUpdateWebHookActivStateError
     /// </summary>
-    public class UpdateWebHookSecretPayload : BasePayload<UpdateWebHookSecretPayload, IUpdateWebHookSecretError>
+    public interface IUpdateWebHookActivStateError { }
+
+    /// <summary>
+    /// UpdateWebHookActivStatePayload
+    /// </summary>
+    public class UpdateWebHookActivStatePayload
+        : BasePayload<UpdateWebHookActivStatePayload, IUpdateWebHookActivStateError>
     {
 
         /// <summary>
         /// Updated WebHook
         /// </summary>
-        public WebHook hook { get; set; }
+        public GQL_WebHook hook { get; set; }
     }
 
     //---------------------------------------
     //---------------------------------------
 
 
-    /// <summary>Handler for <c>UpdateWebHookSecret</c> command </summary>
-    public class UpdateWebHookSecretHandler : IRequestHandler<UpdateWebHookSecret, UpdateWebHookSecretPayload>
+    /// <summary>Handler for <c>UpdateWebHookActivState</c> command </summary>
+    public class UpdateWebHookActivStateHandler
+        : IRequestHandler<UpdateWebHookActivState, UpdateWebHookActivStatePayload>
     {
 
         /// <summary>
@@ -101,9 +107,9 @@ namespace APIServer.Aplication.Commands.WebHooks
         private readonly IDbContextFactory<ApiDbContext> _factory;
 
         /// <summary>
-        /// Injected <c>IMediator</c>
+        /// Injected <c>IMapper</c>
         /// </summary>
-        private readonly IMediator _mediator;
+        private readonly IMapper _mapper;
 
         /// <summary>
         /// Injected <c>IMediator</c>
@@ -113,45 +119,45 @@ namespace APIServer.Aplication.Commands.WebHooks
         /// <summary>
         /// Main constructor
         /// </summary>
-        public UpdateWebHookSecretHandler(
+        public UpdateWebHookActivStateHandler(
             IDbContextFactory<ApiDbContext> factory,
-            IMediator mediator,
-            ICurrentUser currentuser)
+            ICurrentUser currentuser,
+            IMapper mapper)
         {
+            _mapper = mapper;
 
             _factory = factory;
-
-            _mediator = mediator;
 
             _current = currentuser;
         }
 
         /// <summary>
-        /// Command handler for <c>UpdateWebHookSecret</c>
+        /// Command handler for <c>UpdateWebHookActivState</c>
         /// </summary>
-        public async Task<UpdateWebHookSecretPayload> Handle(UpdateWebHookSecret request, CancellationToken cancellationToken)
+        public async Task<UpdateWebHookActivStatePayload> Handle(
+            UpdateWebHookActivState request,
+            CancellationToken cancellationToken)
         {
-
             await using ApiDbContext dbContext =
                 _factory.CreateDbContext();
 
             WebHook wh = await dbContext.WebHooks
-            .TagWith(string.Format("UpdateWebHookSecret Command - Query Hook"))
+            .TagWith(string.Format("UpdateWebHookActivState Command - Query Hook"))
             .Where(e => e.ID == request.WebHookId)
             .FirstOrDefaultAsync(cancellationToken);
 
             if (wh == null)
             {
-                return UpdateWebHookSecretPayload.Error(new WebHookNotFound());
+                return UpdateWebHookActivStatePayload.Error(new WebHookNotFound());
             }
 
-            wh.Secret = request.Secret;
+            wh.IsActive = request.IsActive;
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            var response = UpdateWebHookSecretPayload.Success();
+            var response = UpdateWebHookActivStatePayload.Success();
 
-            response.hook = wh;
+            response.hook = _mapper.Map<GQL_WebHook>(wh); ;
 
             return response;
         }
@@ -160,22 +166,22 @@ namespace APIServer.Aplication.Commands.WebHooks
     //---------------------------------------
     //---------------------------------------
 
-    public class UpdateWebHookSecretPostProcessor
-        : IRequestPostProcessor<UpdateWebHookSecret, UpdateWebHookSecretPayload>
+    public class UpdateWebHookActivStatePostProcessor
+        : IRequestPostProcessor<UpdateWebHookActivState, UpdateWebHookActivStatePayload>
     {
         /// <summary>
         /// Injected <c>IPublisher</c>
         /// </summary>
         private readonly SharedCore.Aplication.Interfaces.IPublisher _publisher;
 
-        public UpdateWebHookSecretPostProcessor(SharedCore.Aplication.Interfaces.IPublisher publisher)
+        public UpdateWebHookActivStatePostProcessor(SharedCore.Aplication.Interfaces.IPublisher publisher)
         {
             _publisher = publisher;
         }
 
         public async Task Process(
-            UpdateWebHookSecret request,
-            UpdateWebHookSecretPayload response,
+            UpdateWebHookActivState request,
+            UpdateWebHookActivStatePayload response,
             CancellationToken cancellationToken)
         {
             if (response != null && !response.HasError())

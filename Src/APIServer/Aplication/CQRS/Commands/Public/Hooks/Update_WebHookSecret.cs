@@ -1,48 +1,49 @@
 using MediatR;
 using System.Linq;
+using System.Threading;
 using MediatR.Pipeline;
 using FluentValidation;
-using System.Threading;
 using APIServer.Persistence;
 using System.Threading.Tasks;
-using APIServer.Aplication.Shared;
-using Microsoft.EntityFrameworkCore;
 using SharedCore.Aplication.Payload;
+using Microsoft.EntityFrameworkCore;
 using SharedCore.Aplication.Interfaces;
 using APIServer.Aplication.Shared.Errors;
-using APIServer.Domain.Core.Models.WebHooks;
 using SharedCore.Aplication.Shared.Attributes;
+using APIServer.Domain.Core.Models.WebHooks;
 using SharedCore.Aplication.Core.Commands;
+using APIServer.Aplication.GraphQL.DTO;
+using AutoMapper;
 
 namespace APIServer.Aplication.Commands.WebHooks
 {
 
     /// <summary>
-    /// Command for updating webhook Uri
+    /// Command for updateing WebHook secret
     /// </summary>
     [Authorize]
-    public class UpdateWebHookUri : CommandBase<UpdateWebHookUriPayload>
+    public class UpdateWebHookSecret : CommandBase<UpdateWebHookSecretPayload>
     {
 
         /// <summary>WebHook Id </summary>
         public long WebHookId { get; set; }
 
-        /// <summary> Url </summary>
-        public string WebHookUrl { get; set; }
+        /// <summary> Secret </summary>
+        public string Secret { get; set; }
     }
 
     //---------------------------------------
     //---------------------------------------
 
     /// <summary>
-    /// UpdateWebHookUri Validator
+    /// UpdateWebHookSecret Validator
     /// </summary>
-    public class UpdateWebHookUriValidator : AbstractValidator<UpdateWebHookUri>
+    public class UpdateWebHookSecretValidator : AbstractValidator<UpdateWebHookSecret>
     {
 
         private readonly IDbContextFactory<ApiDbContext> _factory;
 
-        public UpdateWebHookUriValidator(IDbContextFactory<ApiDbContext> factory)
+        public UpdateWebHookSecretValidator(IDbContextFactory<ApiDbContext> factory)
         {
             _factory = factory;
 
@@ -50,27 +51,15 @@ namespace APIServer.Aplication.Commands.WebHooks
             .NotNull()
             .GreaterThan(0);
 
-            RuleFor(e => e.WebHookUrl)
-            .NotEmpty()
-            .NotNull();
-
-            RuleFor(e => e.WebHookUrl)
-            .Matches(Common.URI_REGEX)
-            .WithMessage("Does not match URI expression");
-
-            RuleFor(e => e.WebHookUrl)
+            RuleFor(e => e.Secret)
             .MaximumLength(1000);
-
-            RuleFor(e => e.WebHookUrl)
-            .MustAsync(BeUniqueByURL)
-            .WithMessage("Hook endpoint allready exist");
 
             RuleFor(e => e.WebHookId)
             .MustAsync(HookExist)
             .WithMessage("Hook was not found");
         }
 
-        public async Task<bool> HookExist(UpdateWebHookUri request, long id, CancellationToken cancellationToken)
+        public async Task<bool> HookExist(UpdateWebHookSecret request, long id, CancellationToken cancellationToken)
         {
 
             await using ApiDbContext dbContext =
@@ -78,42 +67,34 @@ namespace APIServer.Aplication.Commands.WebHooks
 
             return await dbContext.WebHooks.AnyAsync(e => e.ID == request.WebHookId);
         }
-
-        public async Task<bool> BeUniqueByURL(UpdateWebHookUri request, string title, CancellationToken cancellationToken)
-        {
-
-            await using ApiDbContext dbContext =
-                _factory.CreateDbContext();
-
-            return await dbContext.WebHooks.AnyAsync(e => e.WebHookUrl == request.WebHookUrl);
-        }
     }
 
     //---------------------------------------
     //---------------------------------------
 
     /// <summary>
-    /// IUpdateWebHookUriError
+    /// IUpdateWebHookSecretError
     /// </summary>
-    public interface IUpdateWebHookUriError { }
+    public interface IUpdateWebHookSecretError { }
 
     /// <summary>
-    /// UpdateWebHookUriPayload
+    /// UpdateWebHookSecretPayload
     /// </summary>
-    public class UpdateWebHookUriPayload : BasePayload<UpdateWebHookUriPayload, IUpdateWebHookUriError>
+    public class UpdateWebHookSecretPayload : BasePayload<UpdateWebHookSecretPayload, IUpdateWebHookSecretError>
     {
 
         /// <summary>
         /// Updated WebHook
         /// </summary>
-        public WebHook hook { get; set; }
+        public GQL_WebHook hook { get; set; }
     }
 
     //---------------------------------------
     //---------------------------------------
 
-    /// <summary>Handler for <c>UpdateWebHookUri</c> command </summary>
-    public class UpdateWebHookUriHandler : IRequestHandler<UpdateWebHookUri, UpdateWebHookUriPayload>
+
+    /// <summary>Handler for <c>UpdateWebHookSecret</c> command </summary>
+    public class UpdateWebHookSecretHandler : IRequestHandler<UpdateWebHookSecret, UpdateWebHookSecretPayload>
     {
 
         /// <summary>
@@ -122,9 +103,9 @@ namespace APIServer.Aplication.Commands.WebHooks
         private readonly IDbContextFactory<ApiDbContext> _factory;
 
         /// <summary>
-        /// Injected <c>IMediator</c>
+        /// Injected <c>IMapper</c>
         /// </summary>
-        private readonly IMediator _mediator;
+        private readonly IMapper _mapper;
 
         /// <summary>
         /// Injected <c>IMediator</c>
@@ -134,70 +115,68 @@ namespace APIServer.Aplication.Commands.WebHooks
         /// <summary>
         /// Main constructor
         /// </summary>
-        public UpdateWebHookUriHandler(
+        public UpdateWebHookSecretHandler(
             IDbContextFactory<ApiDbContext> factory,
-            IMediator mediator,
-            ICurrentUser currentuser)
+            ICurrentUser currentuser,
+            IMapper mapper)
         {
+            _mapper = mapper;
 
             _factory = factory;
-
-            _mediator = mediator;
 
             _current = currentuser;
         }
 
         /// <summary>
-        /// Command handler for <c>UpdateWebHookUri</c>
+        /// Command handler for <c>UpdateWebHookSecret</c>
         /// </summary>
-        public async Task<UpdateWebHookUriPayload> Handle(UpdateWebHookUri request, CancellationToken cancellationToken)
+        public async Task<UpdateWebHookSecretPayload> Handle(UpdateWebHookSecret request, CancellationToken cancellationToken)
         {
 
             await using ApiDbContext dbContext =
                 _factory.CreateDbContext();
 
             WebHook wh = await dbContext.WebHooks
-            .TagWith(string.Format("UpdateWebHookUri Command - Query Hook"))
+            .TagWith(string.Format("UpdateWebHookSecret Command - Query Hook"))
             .Where(e => e.ID == request.WebHookId)
             .FirstOrDefaultAsync(cancellationToken);
 
             if (wh == null)
             {
-                return UpdateWebHookUriPayload.Error(new WebHookNotFound());
+                return UpdateWebHookSecretPayload.Error(new WebHookNotFound());
             }
 
-            wh.WebHookUrl = request.WebHookUrl;
+            wh.Secret = request.Secret;
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            var response = UpdateWebHookUriPayload.Success();
+            var response = UpdateWebHookSecretPayload.Success();
 
-            response.hook = wh;
+            response.hook = _mapper.Map<GQL_WebHook>(wh); ;
 
             return response;
-
         }
     }
 
     //---------------------------------------
     //---------------------------------------
 
-    public class UpdateWebHookUriPostProcessor
-        : IRequestPostProcessor<UpdateWebHookUriPayload, UpdateWebHookUriPayload>
+    public class UpdateWebHookSecretPostProcessor
+        : IRequestPostProcessor<UpdateWebHookSecret, UpdateWebHookSecretPayload>
     {
         /// <summary>
         /// Injected <c>IPublisher</c>
         /// </summary>
         private readonly SharedCore.Aplication.Interfaces.IPublisher _publisher;
 
-        public UpdateWebHookUriPostProcessor(SharedCore.Aplication.Interfaces.IPublisher publisher)
+        public UpdateWebHookSecretPostProcessor(SharedCore.Aplication.Interfaces.IPublisher publisher)
         {
             _publisher = publisher;
         }
 
         public async Task Process(
-            UpdateWebHookUriPayload request,
-            UpdateWebHookUriPayload response,
+            UpdateWebHookSecret request,
+            UpdateWebHookSecretPayload response,
             CancellationToken cancellationToken)
         {
             if (response != null && !response.HasError())

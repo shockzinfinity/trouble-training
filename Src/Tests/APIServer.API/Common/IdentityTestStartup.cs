@@ -10,7 +10,6 @@ using IdentityServer.Persistence;
 using Microsoft.EntityFrameworkCore;
 using IdentityServer.Domain.Models;
 using Microsoft.AspNetCore.Identity;
-using IdentityServer.API;
 
 namespace APIServer.API.IntegrationTests
 {
@@ -55,7 +54,7 @@ namespace APIServer.API.IntegrationTests
             .AddDefaultTokenProviders();
 
             var identityServerBuilder = services.AddIdentityServer(
-                options => options.KeyManagement.Enabled = true)
+                options => options.KeyManagement.Enabled = false)
                 .AddInMemoryClients(Clients.Get())
                 .AddInMemoryIdentityResources(Resources.GetIdentityResources())
                 .AddInMemoryApiResources(Resources.GetApiResources())
