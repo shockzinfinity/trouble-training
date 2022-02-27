@@ -1,201 +1,201 @@
-using MediatR;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Linq;
-using FluentValidation;
-using SharedCore.Aplication.Shared.Attributes;
-using Microsoft.EntityFrameworkCore;
-using APIServer.Persistence;
-using APIServer.Domain.Core.Models.WebHooks;
-using SharedCore.Aplication.Interfaces;
-using APIServer.Aplication.Shared.Errors;
-using SharedCore.Aplication.Payload;
-using MediatR.Pipeline;
-using SharedCore.Aplication.Core.Commands;
 using APIServer.Aplication.GraphQL.DTO;
+using APIServer.Aplication.Shared.Errors;
+using APIServer.Domain.Core.Models.WebHooks;
+using APIServer.Persistence;
 using AutoMapper;
+using FluentValidation;
+using MediatR;
+using MediatR.Pipeline;
+using Microsoft.EntityFrameworkCore;
+using SharedCore.Aplication.Core.Commands;
+using SharedCore.Aplication.Interfaces;
+using SharedCore.Aplication.Payload;
+using SharedCore.Aplication.Shared.Attributes;
 
 namespace APIServer.Aplication.Commands.WebHooks
 {
 
+  /// <summary>
+  /// Command for updating webhook
+  /// </summary>
+  [Authorize]
+  public class UpdateWebHookActivState : CommandBase<UpdateWebHookActivStatePayload>
+  {
+
+    /// <summary>WebHook Id </summary>
+    public long WebHookId { get; set; }
+
+    /// <summary> IsActive </summary>
+    public bool IsActive { get; set; }
+  }
+
+  //---------------------------------------
+  //---------------------------------------
+
+
+  /// <summary>
+  /// UpdateWebHookActivState Validator
+  /// </summary>
+  public class UpdateWebHookActivStateValidator : AbstractValidator<UpdateWebHookActivState>
+  {
+
+    private readonly IDbContextFactory<ApiDbContext> _factory;
+
+    public UpdateWebHookActivStateValidator(IDbContextFactory<ApiDbContext> factory)
+    {
+      _factory = factory;
+
+      RuleFor(e => e.WebHookId)
+      .NotNull()
+      .GreaterThan(0);
+
+      RuleFor(e => e.WebHookId)
+      .MustAsync(HookExist)
+      .WithMessage("Hook was not found");
+    }
+
+    public async Task<bool> HookExist(
+        UpdateWebHookActivState request,
+        long id,
+        CancellationToken cancellationToken)
+    {
+
+      await using ApiDbContext dbContext =
+          _factory.CreateDbContext();
+
+      return await dbContext.WebHooks.AnyAsync(e => e.ID == request.WebHookId);
+    }
+  }
+
+  //---------------------------------------
+  //---------------------------------------
+
+
+  /// <summary>
+  /// IUpdateWebHookActivStateError
+  /// </summary>
+  public interface IUpdateWebHookActivStateError { }
+
+  /// <summary>
+  /// UpdateWebHookActivStatePayload
+  /// </summary>
+  public class UpdateWebHookActivStatePayload
+      : BasePayload<UpdateWebHookActivStatePayload, IUpdateWebHookActivStateError>
+  {
+
     /// <summary>
-    /// Command for updating webhook
+    /// Updated WebHook
     /// </summary>
-    [Authorize]
-    public class UpdateWebHookActivState : CommandBase<UpdateWebHookActivStatePayload>
-    {
+    public GQL_WebHook hook { get; set; }
+  }
 
-        /// <summary>WebHook Id </summary>
-        public long WebHookId { get; set; }
+  //---------------------------------------
+  //---------------------------------------
 
-        /// <summary> IsActive </summary>
-        public bool IsActive { get; set; }
-    }
 
-    //---------------------------------------
-    //---------------------------------------
-
+  /// <summary>Handler for <c>UpdateWebHookActivState</c> command </summary>
+  public class UpdateWebHookActivStateHandler
+      : IRequestHandler<UpdateWebHookActivState, UpdateWebHookActivStatePayload>
+  {
 
     /// <summary>
-    /// UpdateWebHookActivState Validator
+    /// Injected <c>ApiDbContext</c>
     /// </summary>
-    public class UpdateWebHookActivStateValidator : AbstractValidator<UpdateWebHookActivState>
-    {
-
-        private readonly IDbContextFactory<ApiDbContext> _factory;
-
-        public UpdateWebHookActivStateValidator(IDbContextFactory<ApiDbContext> factory)
-        {
-            _factory = factory;
-
-            RuleFor(e => e.WebHookId)
-            .NotNull()
-            .GreaterThan(0);
-
-            RuleFor(e => e.WebHookId)
-            .MustAsync(HookExist)
-            .WithMessage("Hook was not found");
-        }
-
-        public async Task<bool> HookExist(
-            UpdateWebHookActivState request,
-            long id,
-            CancellationToken cancellationToken)
-        {
-
-            await using ApiDbContext dbContext =
-                _factory.CreateDbContext();
-
-            return await dbContext.WebHooks.AnyAsync(e => e.ID == request.WebHookId);
-        }
-    }
-
-    //---------------------------------------
-    //---------------------------------------
-
+    private readonly IDbContextFactory<ApiDbContext> _factory;
 
     /// <summary>
-    /// IUpdateWebHookActivStateError
+    /// Injected <c>IMapper</c>
     /// </summary>
-    public interface IUpdateWebHookActivStateError { }
+    private readonly IMapper _mapper;
 
     /// <summary>
-    /// UpdateWebHookActivStatePayload
+    /// Injected <c>IMediator</c>
     /// </summary>
-    public class UpdateWebHookActivStatePayload
-        : BasePayload<UpdateWebHookActivStatePayload, IUpdateWebHookActivStateError>
-    {
+    private readonly ICurrentUser _current;
 
-        /// <summary>
-        /// Updated WebHook
-        /// </summary>
-        public GQL_WebHook hook { get; set; }
+    /// <summary>
+    /// Main constructor
+    /// </summary>
+    public UpdateWebHookActivStateHandler(
+        IDbContextFactory<ApiDbContext> factory,
+        ICurrentUser currentuser,
+        IMapper mapper)
+    {
+      _mapper = mapper;
+
+      _factory = factory;
+
+      _current = currentuser;
     }
 
-    //---------------------------------------
-    //---------------------------------------
-
-
-    /// <summary>Handler for <c>UpdateWebHookActivState</c> command </summary>
-    public class UpdateWebHookActivStateHandler
-        : IRequestHandler<UpdateWebHookActivState, UpdateWebHookActivStatePayload>
+    /// <summary>
+    /// Command handler for <c>UpdateWebHookActivState</c>
+    /// </summary>
+    public async Task<UpdateWebHookActivStatePayload> Handle(
+        UpdateWebHookActivState request,
+        CancellationToken cancellationToken)
     {
+      await using ApiDbContext dbContext =
+          _factory.CreateDbContext();
 
-        /// <summary>
-        /// Injected <c>ApiDbContext</c>
-        /// </summary>
-        private readonly IDbContextFactory<ApiDbContext> _factory;
+      WebHook wh = await dbContext.WebHooks
+      .TagWith(string.Format("UpdateWebHookActivState Command - Query Hook"))
+      .Where(e => e.ID == request.WebHookId)
+      .FirstOrDefaultAsync(cancellationToken);
 
-        /// <summary>
-        /// Injected <c>IMapper</c>
-        /// </summary>
-        private readonly IMapper _mapper;
+      if (wh == null)
+      {
+        return UpdateWebHookActivStatePayload.Error(new WebHookNotFound());
+      }
 
-        /// <summary>
-        /// Injected <c>IMediator</c>
-        /// </summary>
-        private readonly ICurrentUser _current;
+      wh.IsActive = request.IsActive;
 
-        /// <summary>
-        /// Main constructor
-        /// </summary>
-        public UpdateWebHookActivStateHandler(
-            IDbContextFactory<ApiDbContext> factory,
-            ICurrentUser currentuser,
-            IMapper mapper)
-        {
-            _mapper = mapper;
+      await dbContext.SaveChangesAsync(cancellationToken);
 
-            _factory = factory;
+      var response = UpdateWebHookActivStatePayload.Success();
 
-            _current = currentuser;
-        }
+      response.hook = _mapper.Map<GQL_WebHook>(wh); ;
 
-        /// <summary>
-        /// Command handler for <c>UpdateWebHookActivState</c>
-        /// </summary>
-        public async Task<UpdateWebHookActivStatePayload> Handle(
-            UpdateWebHookActivState request,
-            CancellationToken cancellationToken)
-        {
-            await using ApiDbContext dbContext =
-                _factory.CreateDbContext();
+      return response;
+    }
+  }
 
-            WebHook wh = await dbContext.WebHooks
-            .TagWith(string.Format("UpdateWebHookActivState Command - Query Hook"))
-            .Where(e => e.ID == request.WebHookId)
-            .FirstOrDefaultAsync(cancellationToken);
+  //---------------------------------------
+  //---------------------------------------
 
-            if (wh == null)
-            {
-                return UpdateWebHookActivStatePayload.Error(new WebHookNotFound());
-            }
+  public class UpdateWebHookActivStatePostProcessor
+      : IRequestPostProcessor<UpdateWebHookActivState, UpdateWebHookActivStatePayload>
+  {
+    /// <summary>
+    /// Injected <c>IPublisher</c>
+    /// </summary>
+    private readonly SharedCore.Aplication.Interfaces.IPublisher _publisher;
 
-            wh.IsActive = request.IsActive;
-
-            await dbContext.SaveChangesAsync(cancellationToken);
-
-            var response = UpdateWebHookActivStatePayload.Success();
-
-            response.hook = _mapper.Map<GQL_WebHook>(wh); ;
-
-            return response;
-        }
+    public UpdateWebHookActivStatePostProcessor(SharedCore.Aplication.Interfaces.IPublisher publisher)
+    {
+      _publisher = publisher;
     }
 
-    //---------------------------------------
-    //---------------------------------------
-
-    public class UpdateWebHookActivStatePostProcessor
-        : IRequestPostProcessor<UpdateWebHookActivState, UpdateWebHookActivStatePayload>
+    public async Task Process(
+        UpdateWebHookActivState request,
+        UpdateWebHookActivStatePayload response,
+        CancellationToken cancellationToken)
     {
-        /// <summary>
-        /// Injected <c>IPublisher</c>
-        /// </summary>
-        private readonly SharedCore.Aplication.Interfaces.IPublisher _publisher;
-
-        public UpdateWebHookActivStatePostProcessor(SharedCore.Aplication.Interfaces.IPublisher publisher)
+      if (response != null && !response.HasError())
+      {
+        try
         {
-            _publisher = publisher;
+
+          await Task.CompletedTask;
+
+          // Add Notification hire
+
         }
-
-        public async Task Process(
-            UpdateWebHookActivState request,
-            UpdateWebHookActivStatePayload response,
-            CancellationToken cancellationToken)
-        {
-            if (response != null && !response.HasError())
-            {
-                try
-                {
-
-                    await Task.CompletedTask;
-
-                    // Add Notification hire
-
-                }
-                catch { }
-            }
-        }
+        catch { }
+      }
     }
+  }
 }

@@ -1,15 +1,15 @@
-using Duende.IdentityServer.Models;
-using IdentityModel;
 using System.Collections.Generic;
 using System.Security.Claims;
+using Duende.IdentityServer.Models;
+using IdentityModel;
 
 namespace APIServer.Benchmark
 {
-    public class Clients
+  public class Clients
+  {
+    public static IEnumerable<Client> Get()
     {
-        public static IEnumerable<Client> Get()
-        {
-            return new List<Client>
+      return new List<Client>
             {
                 new Client
                 {
@@ -24,14 +24,14 @@ namespace APIServer.Benchmark
                     AllowedScopes = { "openid", "profile", "api" }
                 }
             };
-        }
     }
-    public class Resources
+  }
+  public class Resources
+  {
+    public static IEnumerable<IdentityResource> GetIdentityResources()
     {
-        public static IEnumerable<IdentityResource> GetIdentityResources()
-        {
-            return new[]
-            {
+      return new[]
+      {
                 new IdentityResources.OpenId(),
                 new IdentityResources.Profile(),
                 new IdentityResources.Email(),
@@ -41,12 +41,12 @@ namespace APIServer.Benchmark
                     UserClaims = new List<string> {"role"}
                 }
             };
-        }
+    }
 
-        public static IEnumerable<ApiResource> GetApiResources()
-        {
-            return new[]
-            {
+    public static IEnumerable<ApiResource> GetApiResources()
+    {
+      return new[]
+      {
                 new ApiResource
                 {
                     Name = "api",
@@ -64,12 +64,12 @@ namespace APIServer.Benchmark
 
                 }
             };
-        }
+    }
 
-        public static IEnumerable<ApiScope> GetApiScopes()
-        {
-            return new ApiScope[]
-            {
+    public static IEnumerable<ApiScope> GetApiScopes()
+    {
+      return new ApiScope[]
+      {
                 new ApiScope("api", new[] {
                     JwtClaimTypes.Name,
                     JwtClaimTypes.Role,
@@ -77,16 +77,16 @@ namespace APIServer.Benchmark
                     JwtClaimTypes.ClientId,
                     JwtClaimTypes.SessionId
                     }),
-            };
-        }
+      };
     }
+  }
 
 
-    public class Users
+  public class Users
+  {
+    public static List<Duende.IdentityServer.Test.TestUser> Get()
     {
-        public static List<Duende.IdentityServer.Test.TestUser> Get()
-        {
-            return new List<Duende.IdentityServer.Test.TestUser>
+      return new List<Duende.IdentityServer.Test.TestUser>
             {
                 new Duende.IdentityServer.Test.TestUser
                 {
@@ -102,7 +102,7 @@ namespace APIServer.Benchmark
                     }
                 }
             };
-        }
     }
+  }
 
 }

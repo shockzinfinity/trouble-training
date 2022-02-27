@@ -4,24 +4,23 @@ using System.Diagnostics;
 namespace SharedCore.Aplication.Interfaces
 {
 
-    /// <summary>
-    /// Telemetry helpers
-    /// </summary>
-    public interface ITelemetry
-    {
+  /// <summary>
+  /// Telemetry helpers
+  /// </summary>
+  public interface ITelemetry
+  {
 
-        Activity Current { get; }
+    Activity Current { get; }
 
-        void SetOtelError(string error, bool log = false);
+    void SetOtelError(string error, bool log = false);
 
-        void SetOtelError(Exception ex);
+    void SetOtelError(Exception ex);
 
-        void SetOtelWarning(string error);
+    void SetOtelWarning(string error);
 
-        string GetTraceId();
+    string GetTraceId();
 
-        ActivitySource AppSource { get; }
+    ActivitySource AppSource { get; }
 
-    }
-
+  }
 }

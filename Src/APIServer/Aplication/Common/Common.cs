@@ -9,16 +9,16 @@ using SharedCore.Aplication.Payload;
 namespace APIServer.Aplication.Shared
 {
 
-    public static partial class Common
+  public static partial class Common
+  {
+
+    public static TResponse HandleBaseCommandException<TResponse>(Exception ex)
     {
+      IBasePayload payload = ((IBasePayload)Activator.CreateInstance<TResponse>());
 
-        public static TResponse HandleBaseCommandException<TResponse>(Exception ex)
-        {
-            IBasePayload payload = ((IBasePayload)Activator.CreateInstance<TResponse>());
+      payload.AddError(new InternalServerError(ex.Message));
 
-            payload.AddError(new InternalServerError(ex.Message));
-
-            return (TResponse)payload;
-        }
+      return (TResponse)payload;
     }
+  }
 }

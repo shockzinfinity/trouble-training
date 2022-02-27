@@ -4,105 +4,105 @@ using SharedCore.Aplication.GraphQL.Errors;
 namespace APIServer.Aplication.Shared.Errors
 {
 
-    public interface ITestError { }
+  public interface ITestError { }
 
-    public class UnAuthorised : BaseError, ICreateWebHookError, IRemoveWebHookError, IUpdateWebHookError,
-    IUpdateWebHookActivStateError, IUpdateWebHookSecretError, IUpdateWebHookTriggerEventsError,
-    IUpdateWebHookUriError, ITestError
+  public class UnAuthorised : BaseError, ICreateWebHookError, IRemoveWebHookError, IUpdateWebHookError,
+  IUpdateWebHookActivStateError, IUpdateWebHookSecretError, IUpdateWebHookTriggerEventsError,
+  IUpdateWebHookUriError, ITestError
+  {
+    public UnAuthorised()
     {
-        public UnAuthorised()
-        {
-            this.message = "Unauthorised to process or access resource";
-        }
-
-        public UnAuthorised(string s)
-        {
-
-            this.message = s;
-        }
-
-        public UnAuthorised(object content, string message)
-        {
-
-            this.message = message;
-        }
+      this.message = "Unauthorised to process or access resource";
     }
 
-    public class InternalServerError : BaseError, ICreateWebHookError, IRemoveWebHookError, IUpdateWebHookError,
-    IUpdateWebHookActivStateError, IUpdateWebHookSecretError, IUpdateWebHookTriggerEventsError,
-    IUpdateWebHookUriError, ITestError
+    public UnAuthorised(string s)
     {
 
-        public InternalServerError()
-        {
-            this.message = "Internal server error";
-        }
-
-        public InternalServerError(string s)
-        {
-            this.message = s;
-        }
+      this.message = s;
     }
 
-    public class ValidationError : BaseError, ICreateWebHookError, IRemoveWebHookError, IUpdateWebHookError,
-    IUpdateWebHookActivStateError, IUpdateWebHookSecretError, IUpdateWebHookTriggerEventsError,
-    IUpdateWebHookUriError, ITestError
+    public UnAuthorised(object content, string message)
     {
-        public ValidationError()
-        {
-            this.message = "Some parameter/s are invalid or null";
-        }
 
-        public ValidationError(string s)
-        {
-            this.message = s;
-        }
+      this.message = message;
+    }
+  }
 
-        public ValidationError(string propName, string message)
-        {
-            this.message = message;
-            this.FieldName = propName;
-        }
+  public class InternalServerError : BaseError, ICreateWebHookError, IRemoveWebHookError, IUpdateWebHookError,
+  IUpdateWebHookActivStateError, IUpdateWebHookSecretError, IUpdateWebHookTriggerEventsError,
+  IUpdateWebHookUriError, ITestError
+  {
+
+    public InternalServerError()
+    {
+      this.message = "Internal server error";
+    }
+
+    public InternalServerError(string s)
+    {
+      this.message = s;
+    }
+  }
+
+  public class ValidationError : BaseError, ICreateWebHookError, IRemoveWebHookError, IUpdateWebHookError,
+  IUpdateWebHookActivStateError, IUpdateWebHookSecretError, IUpdateWebHookTriggerEventsError,
+  IUpdateWebHookUriError, ITestError
+  {
+    public ValidationError()
+    {
+      this.message = "Some parameter/s are invalid or null";
+    }
+
+    public ValidationError(string s)
+    {
+      this.message = s;
+    }
+
+    public ValidationError(string propName, string message)
+    {
+      this.message = message;
+      this.FieldName = propName;
+    }
 
 #nullable enable
-        public string? FieldName { get; set; }
+    public string? FieldName { get; set; }
 #nullable disable
 
-    }
+  }
 
-    public class BadRequest : BaseError
+  public class BadRequest : BaseError
+  {
+    public BadRequest()
     {
-        public BadRequest()
-        {
-            this.message = "Bad request";
-        }
-
-        public BadRequest(string s)
-        {
-            this.message = s;
-        }
+      this.message = "Bad request";
     }
 
-    public class UserDeactivated : BaseError
+    public BadRequest(string s)
     {
-        public UserDeactivated()
-        {
-            this.message = "User deactivated";
-        }
+      this.message = s;
     }
+  }
 
-    public class WebHookNotFound : BaseError, IUpdateWebHookError, IUpdateWebHookActivStateError, IUpdateWebHookUriError,
-     IUpdateWebHookSecretError, IRemoveWebHookError, IUpdateWebHookTriggerEventsError
+  public class UserDeactivated : BaseError
+  {
+    public UserDeactivated()
     {
-        public WebHookNotFound()
-        {
-            this.message = "WebHook was not found";
-        }
-
-        public WebHookNotFound(string s)
-        {
-            this.message = s;
-        }
+      this.message = "User deactivated";
     }
+  }
+
+  public class WebHookNotFound : BaseError, IUpdateWebHookError, IUpdateWebHookActivStateError, IUpdateWebHookUriError,
+   IUpdateWebHookSecretError, IRemoveWebHookError, IUpdateWebHookTriggerEventsError
+  {
+    public WebHookNotFound()
+    {
+      this.message = "WebHook was not found";
+    }
+
+    public WebHookNotFound(string s)
+    {
+      this.message = s;
+    }
+  }
 }
 

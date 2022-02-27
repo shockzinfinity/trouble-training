@@ -1,111 +1,114 @@
-using MediatR;
-using System.Threading;
-using FluentValidation;
-using APIServer.Persistence;
-using System.Threading.Tasks;
 using System.Security.Claims;
-using SharedCore.Aplication.Payload;
-using Microsoft.EntityFrameworkCore;
+using System.Threading;
+using System.Threading.Tasks;
 using APIServer.Aplication.GraphQL.DTO;
-using SharedCore.Aplication.Interfaces;
-using SharedCore.Aplication.Core.Commands;
 using APIServer.Aplication.Shared.Behaviours;
+using APIServer.Persistence;
+using FluentValidation;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using SharedCore.Aplication.Core.Commands;
+using SharedCore.Aplication.Interfaces;
+using SharedCore.Aplication.Payload;
 
 namespace APIServer.Aplication.Queries
 {
 
-    /// <summary>
-    /// Query current user
-    /// </summary>
-    public class GetCurrentUser : CommandBase<GetCurrentUserPayload> { }
+  /// <summary>
+  /// Query current user
+  /// </summary>
+  public class GetCurrentUser : CommandBase<GetCurrentUserPayload> { }
 
-    //---------------------------------------
-    //---------------------------------------
+  //---------------------------------------
+  //---------------------------------------
 
-    /// <summary>
-    /// GetCurrentUser Validator
-    /// </summary>
-    public class GetCurrentUserValidator : AbstractValidator<GetCurrentUser>
+  /// <summary>
+  /// GetCurrentUser Validator
+  /// </summary>
+  public class GetCurrentUserValidator : AbstractValidator<GetCurrentUser>
+  {
+    public GetCurrentUserValidator() { }
+  }
+
+  /// <summary>
+  /// Authorization validator
+  /// </summary>
+  public class GetCurrentUserAuthorizationValidator : AuthorizationValidator<GetCurrentUser>
+  {
+    public GetCurrentUserAuthorizationValidator()
     {
-        public GetCurrentUserValidator() { }
+      // Add Field authorization cehcks..
+    }
+  }
+
+  //---------------------------------------
+  //---------------------------------------
+
+  /// <summary>
+  /// IGetCurrentUserError
+  /// </summary>
+  public interface IGetCurrentUserError { }
+
+  /// <summary>
+  /// GetCurrentUserPayload
+  /// </summary>
+  public class GetCurrentUserPayload : BasePayload<GetCurrentUserPayload, IGetCurrentUserError>
+  {
+    public GQL_User user { get; set; }
+  }
+
+  //---------------------------------------
+  //---------------------------------------
+
+  /// <summary>Handler for <c>GetCurrentUser</c> command </summary>
+  public class GetCurrentUserHandler : IRequestHandler<GetCurrentUser, GetCurrentUserPayload>
+  {
+    /// <summary>
+    /// Injected <c>ICurrentUser</c>
+    /// </summary>
+    private readonly ICurrentUser _current;
+
+    /// <summary>
+    /// Main constructor
+    /// </summary>
+    public GetCurrentUserHandler(
+        IDbContextFactory<ApiDbContext> factory,
+        ICurrentUser currentuser)
+    {
+      _current = currentuser;
     }
 
     /// <summary>
-    /// Authorization validator
+    /// Command handler for <c>GetCurrentUser</c>
     /// </summary>
-    public class GetCurrentUserAuthorizationValidator : AuthorizationValidator<GetCurrentUser>
+    public async Task<GetCurrentUserPayload> Handle(
+        GetCurrentUser request, CancellationToken cancellationToken)
     {
-        public GetCurrentUserAuthorizationValidator()
+      await Task.CompletedTask;
+
+      if (!_current.Exist)
+      {
+        // We return null in case user is not authenticated!
+        return new GetCurrentUserPayload()
         {
-            // Add Field authorization cehcks..
-        }
+          user = null
+        };
+      }
+
+      // You can extend object as needed
+      var user = new GQL_User()
+      {
+        Guid = _current.UserId != null ? _current.UserId.Value.ToString() : "",
+        Name = _current.GetClaim(ClaimTypes.Name),
+        Email = _current.GetClaim(ClaimTypes.Email),
+        SessionId = _current.GetClaim("sid"),
+      };
+
+      var response = GetCurrentUserPayload.Success();
+
+      response.user = user;
+
+      return response;
     }
-
-    //---------------------------------------
-    //---------------------------------------
-
-    /// <summary>
-    /// IGetCurrentUserError
-    /// </summary>
-    public interface IGetCurrentUserError { }
-
-    /// <summary>
-    /// GetCurrentUserPayload
-    /// </summary>
-    public class GetCurrentUserPayload : BasePayload<GetCurrentUserPayload, IGetCurrentUserError>
-    {
-        public GQL_User user { get; set; }
-    }
-
-    //---------------------------------------
-    //---------------------------------------
-
-    /// <summary>Handler for <c>GetCurrentUser</c> command </summary>
-    public class GetCurrentUserHandler : IRequestHandler<GetCurrentUser, GetCurrentUserPayload>
-    {
-        /// <summary>
-        /// Injected <c>ICurrentUser</c>
-        /// </summary>
-        private readonly ICurrentUser _current;
-
-        /// <summary>
-        /// Main constructor
-        /// </summary>
-        public GetCurrentUserHandler(
-            IDbContextFactory<ApiDbContext> factory,
-            ICurrentUser currentuser)
-        {
-            _current = currentuser;
-        }
-
-        /// <summary>
-        /// Command handler for <c>GetCurrentUser</c>
-        /// </summary>
-        public async Task<GetCurrentUserPayload> Handle(
-            GetCurrentUser request, CancellationToken cancellationToken)
-        {
-            await Task.CompletedTask;
-
-            if (!_current.Exist)
-            {
-                // We return null in case user is not authenticated!
-                return GetCurrentUserPayload.Success();
-            }
-
-            // You can extend object as needed
-            var user = new GQL_User()
-            {
-                Guid = _current.UserId != null ? _current.UserId.Value.ToString() : "",
-                Name = _current.GetClaim(ClaimTypes.Name),
-                Email = _current.GetClaim(ClaimTypes.Email),
-                SessionId = _current.GetClaim("sid"),
-            };
-
-            var response = GetCurrentUserPayload.Success();
-
-            response.user = user;
-
-            return response;
-        }
-    }
+  }
 }

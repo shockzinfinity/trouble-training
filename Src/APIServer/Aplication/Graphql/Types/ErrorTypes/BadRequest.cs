@@ -6,13 +6,13 @@ using SharedCore.Aplication.GraphQL.Types;
 namespace APIServer.Aplication.GraphQL.Types
 {
 
-    public class BadRequestType : ObjectType<BadRequest>
+  public class BadRequestType : ObjectType<BadRequest>
+  {
+    protected override void Configure(IObjectTypeDescriptor<BadRequest> descriptor)
     {
-        protected override void Configure(IObjectTypeDescriptor<BadRequest> descriptor)
-        {
 
-            descriptor.Implements<BaseErrorInterfaceType>();
-        }
+      descriptor.Implements<BaseErrorInterfaceType>();
     }
+  }
 
 }

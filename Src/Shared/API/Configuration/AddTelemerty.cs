@@ -1,101 +1,121 @@
 using System;
-using OpenTelemetry.Trace;
 using System.Threading.Tasks;
-using OpenTelemetry.Resources;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
-using SharedCore.Aplication.Services;
-using SharedCore.Aplication.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using SharedCore.Aplication.Interfaces;
+using SharedCore.Aplication.Services;
 
 namespace SharedCore.Configuration
 {
-    public static partial class ServiceExtension
+  public static partial class ServiceExtension
+  {
+
+    public static IServiceCollection AddTelemerty(
+        this IServiceCollection serviceCollection,
+        IConfiguration Configuration,
+        IWebHostEnvironment Environment)
     {
 
-        public static IServiceCollection AddTelemerty(
-            this IServiceCollection serviceCollection,
-            IConfiguration Configuration,
-            IWebHostEnvironment Environment)
-        {
+      serviceCollection.AddTelemetryService(Configuration, out string trace_source);
 
-            serviceCollection.AddTelemetryService(Configuration, out string trace_source);
+      serviceCollection.AddOpenTelemetryTracing((builder) =>
+      {
+        // Sources
+        builder.AddSource(trace_source);
 
-            serviceCollection.AddOpenTelemetryTracing((builder) =>
-            {
-
-                // Sources
-                builder.AddSource(trace_source);
-
-                builder.SetResourceBuilder(ResourceBuilder
-                  .CreateDefault()
+        builder.SetResourceBuilder(ResourceBuilder
+                .CreateDefault()
                 //   .AddAttributes( new List<KeyValuePair<String, object>> { 
                 //     new KeyValuePair<String, object>("SomeKey", "This is String Value")
                 //     })
-                  .AddService(Environment.ApplicationName));
+                .AddService(Environment.ApplicationName));
 
-                builder.AddAspNetCoreInstrumentation(opts =>
+        builder.AddAspNetCoreInstrumentation(opts =>
+              {
+                opts.RecordException = true;
+
+                // Enricher example
+                opts.Enrich = async (activity, eventName, rawObject) =>
                 {
-                    opts.RecordException = true;
 
-                    // Enricher example
-                    opts.Enrich = async (activity, eventName, rawObject) =>
+                  await Task.CompletedTask;
+
+                  if (eventName.Equals("OnStartActivity"))
+                  {
+                    if (rawObject is HttpRequest { Path: { Value: "/graphql" } })
                     {
+                      // Do something with request..
+                    }
+                  }
+                };
+                // opts.Filter = (httpContext) =>
+                // {
+                // only collect telemetry about HTTP GET requests
+                // return httpContext.Request.Method.Equals("GET");
+                // };
+              });
 
-                        await Task.CompletedTask;
+        // Uncommented since Net6 is not supported
+        // builder.AddElasticsearchClientInstrumentation();
 
-                        if (eventName.Equals("OnStartActivity"))
-                        {
-                            if (rawObject is HttpRequest { Path: { Value: "/graphql" } })
-                            {
-                                // Do something with request..
-                            }
-                        }
-                    };
-                    // opts.Filter = (httpContext) =>
-                    // {
-                    //     // only collect telemetry about HTTP GET requests
-                    //     // return httpContext.Request.Method.Equals("GET");
-                    // };
-                });
+        builder.AddSqlClientInstrumentation();
 
-                // Uncommented since Net6 is not supported
-                // builder.AddElasticsearchClientInstrumentation();
+        builder.AddHttpClientInstrumentation(
+                  opts => opts.RecordException = true);
 
-                builder.AddSqlClientInstrumentation();
+        builder.AddEntityFrameworkCoreInstrumentation(
+                  e => e.SetDbStatementForText = true);
 
-                builder.AddHttpClientInstrumentation(
-                    opts => opts.RecordException = true);
+        builder.AddHotChocolateInstrumentation();
 
-                builder.AddEntityFrameworkCoreInstrumentation(
-                    e => e.SetDbStatementForText = true);
+        builder.AddOtlpExporter(options =>
+              {
+                // Export to collector
+                options.Endpoint = new Uri(Configuration["ConnectionStrings:OtelCollector"]);
 
-                builder.AddOtlpExporter(options =>
-                {
-                    options.Endpoint = new Uri(Configuration["ConnectionStrings:OtelCollector"]); // Export to collector
-                    // options.Endpoint = new Uri("http://localhost:8200"); // Export dirrectly to APM
-                    // options.BatchExportProcessorOptions = new OpenTelemetry.BatchExportProcessorOptions<Activity>() {
-                    // };                
-                });
+                options.TimeoutMilliseconds = 10000;
 
-                // if (Uri.TryCreate(Configuration.GetConnectionString("Jaeger"), UriKind.Absolute, out var uri)) {
-                //     builder.AddJaegerExporter(opts => {
-                //         opts.AgentHost = uri.Host;
-                //         opts.AgentPort = uri.Port;
-                //         opts.BatchExportProcessorOptions = new OpenTelemetry.BatchExportProcessorOptions<Activity>() {
-                //         };
-                //     });
+                // Export dirrectly to APM
+                // options.Endpoint = new Uri("http://localhost:8200"); 
+                // options.BatchExportProcessorOptions = new OpenTelemetry.BatchExportProcessorOptions<Activity>() {
+                // };                
+              });
 
-                //     // builder.AddZipkinExporter(opts => {
-                //     //     opts.Endpoint = new Uri("http://localhost:9412/api/v2/spans");
-                //     // });
-                // }
-            });
+        // This is example for Jaeger integration
+        // if (Uri.TryCreate(Configuration.GetConnectionString("Jaeger"), UriKind.Absolute, out var uri)) {
+        //     builder.AddJaegerExporter(opts => {
+        //         opts.AgentHost = uri.Host;
+        //         opts.AgentPort = uri.Port;
+        //         opts.BatchExportProcessorOptions = new OpenTelemetry.BatchExportProcessorOptions<Activity>() {
+        //         };
+        //     });
 
-            serviceCollection.AddScoped<ITelemetry, Telemetry>();
+        //     // builder.AddZipkinExporter(opts => {
+        //     //     opts.Endpoint = new Uri("http://localhost:9412/api/v2/spans");
+        //     // });
+        // }
+      });
 
-            return serviceCollection;
-        }
+      serviceCollection.AddLogging(opt =>
+      {
+        opt.AddTraceSource(trace_source);
+
+        opt.AddOpenTelemetry(e =>
+              {
+                e.IncludeFormattedMessage = true;
+
+                e.IncludeScopes = true;
+              });
+      });
+
+      serviceCollection.AddScoped<ITelemetry, Telemetry>();
+
+      return serviceCollection;
     }
+  }
 }

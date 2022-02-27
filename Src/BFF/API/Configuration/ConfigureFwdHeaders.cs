@@ -4,17 +4,17 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace BFF.Configuration
 {
-    public static partial class ServiceExtension
+  public static partial class ServiceExtension
+  {
+
+    public static IServiceCollection ConfigureFwdHeaders(
+        this IServiceCollection serviceCollection)
     {
-
-        public static IServiceCollection ConfigureFwdHeaders(
-            this IServiceCollection serviceCollection)
-        {
-            return serviceCollection.Configure<ForwardedHeadersOptions>(options =>
-            {
-                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-            });
-        }
-
+      return serviceCollection.Configure<ForwardedHeadersOptions>(options =>
+      {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+      });
     }
+
+  }
 }

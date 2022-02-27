@@ -5,27 +5,27 @@ using Microsoft.Extensions.Configuration;
 
 namespace APIServer.Application.IntegrationTests
 {
-    public class XunitFixture : IDisposable
+  public class XunitFixture : IDisposable
+  {
+    public TestServer TestServer;
+
+    public XunitFixture()
     {
-        public TestServer TestServer;
+      var builder = new WebHostBuilder()
+          .ConfigureAppConfiguration((ctx, cfg) =>
+          {
+            cfg.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            cfg.AddJsonFile("serilog.json", optional: true, reloadOnChange: true);
+          })
+          .UseStartup<TestStartup>();
 
-        public XunitFixture()
-        {
-            var builder = new WebHostBuilder()
-                .ConfigureAppConfiguration((ctx, cfg) =>
-                {
-                    cfg.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-                    cfg.AddJsonFile("serilog.json", optional: true, reloadOnChange: true);
-                })
-                .UseStartup<TestStartup>();
-
-            TestServer = new TestServer(builder);
-        }
-
-        public void Dispose()
-        {
-            TestServer.Dispose();
-        }
-
+      TestServer = new TestServer(builder);
     }
+
+    public void Dispose()
+    {
+      TestServer.Dispose();
+    }
+
+  }
 }

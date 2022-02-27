@@ -1,24 +1,24 @@
-using Xunit;
 using System.Net.Http;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Snapshooter.Xunit;
-using System.Threading.Tasks;
+using Xunit;
 
 namespace APIServer.API.IntegrationTests.WebHooks
 {
-    [Collection("Sequential")]
-    public class RemoveWebHookTests : BaseClassFixture
+  [Collection("Sequential")]
+  public class RemoveWebHookTests : BaseClassFixture
+  {
+
+    public RemoveWebHookTests(XunitFixture fixture) : base(fixture)
     {
 
-        public RemoveWebHookTests(XunitFixture fixture) : base(fixture)
-        {
+    }
 
-        }
+    public static string GetTestMutation()
+    {
 
-        public static string GetTestMutation()
-        {
-
-            return @"mutation($request: RemoveWebHookInput) {
+      return @"mutation($request: RemoveWebHookInput) {
                 removeWebHook(request: $request) {
                     ... on RemoveWebHookPayload {
                     removed_id
@@ -36,80 +36,80 @@ namespace APIServer.API.IntegrationTests.WebHooks
                     }
                 }
             }";
-        }
-
-        [Fact]
-        public async Task RemoveWebHook_Authorised()
-        {
-
-            var mutation = GetTestMutation();
-
-            var variables = new
-            {
-                request = new
-                {
-                    webHookId = 1
-                }
-            };
-
-            await RunAs(
-              Common.GetDefaultUser(),
-              Common.GetDefaultClinet());
-
-            var response = await HttpClient.ProcessQuery(mutation, variables);
-
-            response.raw_response.StatusCode.Should().Be(200);
-
-            Snapshot.Match(response.data_content);
-        }
-
-
-        [Fact]
-        public async Task RemoveWebHook_ValidationError()
-        {
-
-            var mutation = GetTestMutation();
-
-            var variables = new
-            {
-                request = new
-                {
-                    webHookId = 999
-                }
-            };
-
-            await RunAs(
-              Common.GetDefaultUser(),
-              Common.GetDefaultClinet());
-
-            var response = await HttpClient.ProcessQuery(mutation, variables);
-
-            response.raw_response.StatusCode.Should().Be(200);
-
-            Snapshot.Match(response.data_content);
-        }
-
-        [Fact]
-        public async Task RemoveWebHook_Unauthorised()
-        {
-
-            var mutation = GetTestMutation();
-
-            var variables = new
-            {
-                request = new
-                {
-                    webHookId = 2
-                }
-            };
-
-            var response = await HttpClient.ProcessQuery(mutation, variables);
-
-            response.raw_response.StatusCode.Should().Be(200);
-
-            Snapshot.Match(response.data_content);
-        }
-
-
     }
+
+    [Fact]
+    public async Task RemoveWebHook_Authorised()
+    {
+
+      var mutation = GetTestMutation();
+
+      var variables = new
+      {
+        request = new
+        {
+          webHookId = 1
+        }
+      };
+
+      await RunAs(
+        Common.GetDefaultUser(),
+        Common.GetDefaultClinet());
+
+      var response = await HttpClient.ProcessQuery(mutation, variables);
+
+      response.raw_response.StatusCode.Should().Be(200);
+
+      Snapshot.Match(response.data_content);
+    }
+
+
+    [Fact]
+    public async Task RemoveWebHook_ValidationError()
+    {
+
+      var mutation = GetTestMutation();
+
+      var variables = new
+      {
+        request = new
+        {
+          webHookId = 999
+        }
+      };
+
+      await RunAs(
+        Common.GetDefaultUser(),
+        Common.GetDefaultClinet());
+
+      var response = await HttpClient.ProcessQuery(mutation, variables);
+
+      response.raw_response.StatusCode.Should().Be(200);
+
+      Snapshot.Match(response.data_content);
+    }
+
+    [Fact]
+    public async Task RemoveWebHook_Unauthorised()
+    {
+
+      var mutation = GetTestMutation();
+
+      var variables = new
+      {
+        request = new
+        {
+          webHookId = 2
+        }
+      };
+
+      var response = await HttpClient.ProcessQuery(mutation, variables);
+
+      response.raw_response.StatusCode.Should().Be(200);
+
+      Snapshot.Match(response.data_content);
+    }
+
+
+  }
 }
