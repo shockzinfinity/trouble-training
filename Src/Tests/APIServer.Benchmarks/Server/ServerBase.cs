@@ -1,152 +1,152 @@
 using System;
+using System.Net.Http;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Nuke.Common;
 using Nuke.Common.IO;
-using System.Net.Http;
-using System.Threading;
-using System.Reflection;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
 
 namespace APIServer.Benchmark
 {
-    public abstract class ServerBase
+  public abstract class ServerBase
+  {
+    private IHost? Server { get; set; } = null;
+
+    public Uri? URL { get; private set; } = null;
+
+    protected ServerBase(Uri? server_url)
     {
-        private IHost? Server { get; set; } = null;
+      this.URL = server_url;
 
-        public Uri? URL { get; private set; } = null;
+      this.CreateServer();
+    }
 
-        protected ServerBase(Uri? server_url)
-        {
-            this.URL = server_url;
+    public void CreateServer()
+    {
+      Server = ConfigureServer();
+    }
 
-            this.CreateServer();
-        }
+    public abstract IHost ConfigureServer();
 
-        public void CreateServer()
-        {
-            Server = ConfigureServer();
-        }
+    public async Task StartServerAsync(CancellationToken ct)
+    {
+      await ValidateServer().StartAsync(ct);
+    }
 
-        public abstract IHost ConfigureServer();
+    public void StartServer()
+    {
+      ValidateServer().Start();
+    }
 
-        public async Task StartServerAsync(CancellationToken ct)
-        {
-            await ValidateServer().StartAsync(ct);
-        }
+    public async Task StopServerAsync(CancellationToken ct)
+    {
+      await ValidateServer().StopAsync(ct);
+    }
 
-        public void StartServer()
-        {
-            ValidateServer().Start();
-        }
+    private IHost ValidateServer()
+    {
+      if (Server is null)
+        throw new Exception($"{this.GetType().Name} is not cofigured!");
 
-        public async Task StopServerAsync(CancellationToken ct)
-        {
-            await ValidateServer().StopAsync(ct);
-        }
+      return Server;
+    }
 
-        private IHost ValidateServer()
-        {
-            if (Server is null)
-                throw new Exception($"{this.GetType().Name} is not cofigured!");
-
-            return Server;
-        }
-
-        public static IHostBuilder DefaultHostBuilder<T>(
-            string[] args,
-            string app_settings_path,
-            Uri? server_url = null) where T : class =>
-            Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.ConfigureAppConfiguration((ctx, cfg) =>
-                    {
-                        cfg.AddJsonFile(app_settings_path, optional: false, reloadOnChange: true);
-                    })
-                    .UseStartup<T>();
-
-                    webBuilder.ConfigureLogging(logging =>
-                    {
-                        logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Error);
-                    });
-
-                    if (server_url is not null)
-                    {
-                        webBuilder.UseUrls(server_url.AbsoluteUri);
-                    }
-                });
-
-        public async Task WaitForHost(string health_endpoint = "health")
-        {
-            if (URL == null)
+    public static IHostBuilder DefaultHostBuilder<T>(
+        string[] args,
+        string app_settings_path,
+        Uri? server_url = null) where T : class =>
+        Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder(args)
+            .ConfigureWebHostDefaults(webBuilder =>
             {
-                return;
-            }
-            else
-            {
-                Log($"Waiting for: {this.GetType().Name} to be on {this.URL.ToString()}");
-            }
+              webBuilder.ConfigureAppConfiguration((ctx, cfg) =>
+                  {
+                    cfg.AddJsonFile(app_settings_path, optional: false, reloadOnChange: true);
+                  })
+                  .UseStartup<T>();
 
-            var handler = new HttpClientHandler()
-            {
-                ServerCertificateCustomValidationCallback = delegate { return true; },
-            };
+              webBuilder.ConfigureLogging(logging =>
+                  {
+                    logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Error);
+                  });
 
-            var client = new HttpClient(handler);
+              if (server_url is not null)
+              {
+                webBuilder.UseUrls(server_url.AbsoluteUri);
+              }
+            });
 
-            int retry = 15;
+    public async Task WaitForHost(string health_endpoint = "health")
+    {
+      if (URL == null)
+      {
+        return;
+      }
+      else
+      {
+        Log($"Waiting for: {this.GetType().Name} to be on {this.URL.ToString()}");
+      }
 
-            for (int i = 1; i <= retry; i++)
-            {
-                await Task.Delay(500 * retry);
+      var handler = new HttpClientHandler()
+      {
+        ServerCertificateCustomValidationCallback = delegate { return true; },
+      };
 
-                try
-                {
-                    var response = await client.GetAsync(URL.ToString() + health_endpoint);
+      var client = new HttpClient(handler);
 
-                    if (response.IsSuccessStatusCode)
-                    {
-                        Log($"{this.GetType().Name} is available!");
-                        return;
-                    }
-                    else
-                    {
+      int retry = 15;
 
-                        continue;
-                    }
-                }
-                catch { }
+      for (int i = 1; i <= retry; i++)
+      {
+        await Task.Delay(500 * retry);
 
-            }
-
-            throw new System.Exception($"{this.GetType().Name} is not available");
-        }
-
-        private static void Log(string message)
+        try
         {
-            System.Console.WriteLine(message);
+          var response = await client.GetAsync(URL.ToString() + health_endpoint);
+
+          if (response.IsSuccessStatusCode)
+          {
+            Log($"{this.GetType().Name} is available!");
+            return;
+          }
+          else
+          {
+
+            continue;
+          }
         }
+        catch { }
 
-        public static AbsolutePath GetRootDirectory()
-        {
-            string methodName = "GetRootDirectory";
+      }
 
-            Type type = typeof(NukeBuild);
+      throw new System.Exception($"{this.GetType().Name} is not available");
+    }
 
-            MethodInfo info = type.GetMethod(
-                methodName,
-                BindingFlags.NonPublic |
-                BindingFlags.Public |
-                BindingFlags.Static |
-                BindingFlags.FlattenHierarchy
-            );
+    private static void Log(string message)
+    {
+      System.Console.WriteLine(message);
+    }
+
+    public static AbsolutePath GetRootDirectory()
+    {
+      string methodName = "GetRootDirectory";
+
+      Type type = typeof(NukeBuild);
+
+      MethodInfo info = type.GetMethod(
+          methodName,
+          BindingFlags.NonPublic |
+          BindingFlags.Public |
+          BindingFlags.Static |
+          BindingFlags.FlattenHierarchy
+      );
 
 #nullable enable
-            return (AbsolutePath)info?.Invoke(null, null);
+      return (AbsolutePath)info?.Invoke(null, null);
 #nullable disable
-        }
     }
+  }
 }

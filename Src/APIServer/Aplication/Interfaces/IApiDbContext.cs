@@ -1,21 +1,21 @@
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
 using System.Threading;
-using Microsoft.EntityFrameworkCore.Infrastructure;
+using System.Threading.Tasks;
 using APIServer.Domain.Core.Models.WebHooks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace APIServer.Aplication.Interfaces
 {
 
-    /// <summary>Main DBContext Interface </summary>
-    public interface IApiDbContext
-    {
-        DbSet<WebHook> WebHooks { get; set; }
+  /// <summary>Main DBContext Interface </summary>
+  public interface IApiDbContext
+  {
+    DbSet<WebHook> WebHooks { get; set; }
 
-        DbSet<WebHookRecord> WebHooksHistory { get; set; }
+    DbSet<WebHookRecord> WebHooksHistory { get; set; }
 
-        Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 
-        DatabaseFacade Database { get; }
-    }
+    DatabaseFacade Database { get; }
+  }
 }

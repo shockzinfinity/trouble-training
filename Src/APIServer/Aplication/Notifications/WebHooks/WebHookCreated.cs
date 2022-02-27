@@ -1,171 +1,171 @@
 using System;
-using MediatR;
+using System.Diagnostics;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Serilog;
-using System.Net.Http;
-using System.Diagnostics;
-using SharedCore.Aplication.Interfaces;
-using APIServer.Domain.Core.Models.Events;
 using APIServer.Aplication.Commands.Internall.Hooks;
+using APIServer.Domain.Core.Models.Events;
 using APIServer.Domain.Core.Models.WebHooks;
+using MediatR;
+using Serilog;
+using SharedCore.Aplication.Interfaces;
 
 namespace APIServer.Aplication.Notifications.WebHooks
 {
 
+  /// <summary>
+  /// Notifi webhook created
+  /// </summary>
+  public class WebHookCreatedNotifi : WebHookBaseNotifi
+  {
+
+  }
+
+  /// <summary>
+  /// Command handler for user <c>WebHookCreatedNotifi</c>
+  /// </summary>
+  public class WebHookCreatedEventLogHandler : INotificationHandler<WebHookCreatedNotifi>
+  {
+
     /// <summary>
-    /// Notifi webhook created
+    /// Injected <c>IScheduler</c>
     /// </summary>
-    public class WebHookCreatedNotifi : WebHookBaseNotifi
+    private readonly IScheduler _scheduler;
+
+    /// <summary>
+    /// Injected <c>ICurrentUser</c>
+    /// </summary>
+    private readonly ICurrentUser _currentuser;
+
+    /// <summary>
+    /// Injected <c>ILogger</c>
+    /// </summary>
+    private readonly ILogger _logger;
+
+    public WebHookCreatedEventLogHandler(
+        IScheduler scheduler,
+        ICurrentUser currentuser,
+        ILogger logger,
+        IHttpClientFactory clientFactory
+        )
     {
 
+      _scheduler = scheduler;
+
+      _currentuser = currentuser;
+
+      _logger = logger;
     }
 
     /// <summary>
-    /// Command handler for user <c>WebHookCreatedNotifi</c>
+    /// Command handler for <c>WebHookCreatedNotifi</c>
     /// </summary>
-    public class WebHookCreatedEventLogHandler : INotificationHandler<WebHookCreatedNotifi>
+    public async Task Handle(WebHookCreatedNotifi request, CancellationToken cancellationToken)
     {
 
-        /// <summary>
-        /// Injected <c>IScheduler</c>
-        /// </summary>
-        private readonly IScheduler _scheduler;
+      if (request == null)
+        return;
 
-        /// <summary>
-        /// Injected <c>ICurrentUser</c>
-        /// </summary>
-        private readonly ICurrentUser _currentuser;
+      await Task.CompletedTask;
 
-        /// <summary>
-        /// Injected <c>ILogger</c>
-        /// </summary>
-        private readonly ILogger _logger;
-
-        public WebHookCreatedEventLogHandler(
-            IScheduler scheduler,
-            ICurrentUser currentuser,
-            ILogger logger,
-            IHttpClientFactory clientFactory
-            )
+      try
+      {
+        _scheduler.Enqueue(new EnqueSaveEvent<WebHookCreated>()
         {
+          Event = new WebHookCreated()
+          {
+            ActorID = _currentuser.UserId,
+            WebHookId = request.WebHookId,
+            TimeStamp = request.TimeStamp != default ? request.TimeStamp : DateTime.Now,
+          },
+          ActivityId = Activity.Current != null ? Activity.Current.Id : null
+        });
+      }
+      catch (Exception ex)
+      {
+        _logger.Error(ex, "Failed to Enqueue IWebHookCreatedEventLog");
+      }
 
-            _scheduler = scheduler;
-
-            _currentuser = currentuser;
-
-            _logger = logger;
-        }
-
-        /// <summary>
-        /// Command handler for <c>WebHookCreatedNotifi</c>
-        /// </summary>
-        public async Task Handle(WebHookCreatedNotifi request, CancellationToken cancellationToken)
-        {
-
-            if (request == null)
-                return;
-
-            await Task.CompletedTask;
-
-            try
-            {
-                _scheduler.Enqueue(new EnqueSaveEvent<WebHookCreated>()
-                {
-                    Event = new WebHookCreated()
-                    {
-                        ActorID = _currentuser.UserId,
-                        WebHookId = request.WebHookId,
-                        TimeStamp = request.TimeStamp != default ? request.TimeStamp : DateTime.Now,
-                    },
-                    ActivityId = Activity.Current != null ? Activity.Current.Id : null
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Failed to Enqueue IWebHookCreatedEventLog");
-            }
-
-            return;
-        }
+      return;
     }
+  }
 
+
+  /// <summary>
+  /// Command handler for user <c>WebHookCreatedNotifi</c>
+  /// </summary>
+  public class WebHookCreatedHookQueueHandler : INotificationHandler<WebHookCreatedNotifi>
+  {
 
     /// <summary>
-    /// Command handler for user <c>WebHookCreatedNotifi</c>
+    /// Injected <c>IScheduler</c>
     /// </summary>
-    public class WebHookCreatedHookQueueHandler : INotificationHandler<WebHookCreatedNotifi>
+    private readonly IScheduler _scheduler;
+
+    /// <summary>
+    /// Injected <c>ICurrentUser</c>
+    /// </summary>
+    private readonly ICurrentUser _currentuser;
+
+    /// <summary>
+    /// Injected <c>ILogger</c>
+    /// </summary>
+    private readonly ILogger _logger;
+
+    public WebHookCreatedHookQueueHandler(
+        IScheduler scheduler,
+        ICurrentUser currentuser,
+        ILogger logger
+        )
     {
 
-        /// <summary>
-        /// Injected <c>IScheduler</c>
-        /// </summary>
-        private readonly IScheduler _scheduler;
+      _scheduler = scheduler;
 
-        /// <summary>
-        /// Injected <c>ICurrentUser</c>
-        /// </summary>
-        private readonly ICurrentUser _currentuser;
+      _currentuser = currentuser;
 
-        /// <summary>
-        /// Injected <c>ILogger</c>
-        /// </summary>
-        private readonly ILogger _logger;
-
-        public WebHookCreatedHookQueueHandler(
-            IScheduler scheduler,
-            ICurrentUser currentuser,
-            ILogger logger
-            )
-        {
-
-            _scheduler = scheduler;
-
-            _currentuser = currentuser;
-
-            _logger = logger;
-        }
-
-        /// <summary>
-        /// Command handler for <c>WebHookCreatedNotifi</c>
-        /// </summary>
-        public async Task Handle(WebHookCreatedNotifi request, CancellationToken cancellationToken)
-        {
-
-            if (request == null)
-                return;
-
-            await Task.CompletedTask;
-
-            WebHookCreated ev = new WebHookCreated()
-            {
-                ActorID = _currentuser.UserId,
-                WebHookId = request.WebHookId,
-                TimeStamp = request.TimeStamp != default ? request.TimeStamp : DateTime.Now,
-            };
-
-            try
-            {
-                _scheduler.Enqueue(new EnqueueRelatedWebHooks()
-                {
-                    Event = new Hook_HookCreated(
-                                HookResourceAction.hook_removed,
-                                new Hook_User_DTO()
-                                {
-                                    id = ev?.ActorID?.ToString(),
-                                    name = _currentuser.Name,
-                                },
-                                new Hook_HookCreatedPayload() { }
-                            ),
-                    EventType = HookEventType.hook,
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Failed to Enqueue Related webhooks for WebHookCreated");
-            }
-
-            return;
-        }
+      _logger = logger;
     }
+
+    /// <summary>
+    /// Command handler for <c>WebHookCreatedNotifi</c>
+    /// </summary>
+    public async Task Handle(WebHookCreatedNotifi request, CancellationToken cancellationToken)
+    {
+
+      if (request == null)
+        return;
+
+      await Task.CompletedTask;
+
+      WebHookCreated ev = new WebHookCreated()
+      {
+        ActorID = _currentuser.UserId,
+        WebHookId = request.WebHookId,
+        TimeStamp = request.TimeStamp != default ? request.TimeStamp : DateTime.Now,
+      };
+
+      try
+      {
+        _scheduler.Enqueue(new EnqueueRelatedWebHooks()
+        {
+          Event = new Hook_HookCreated(
+                        HookResourceAction.hook_removed,
+                        new Hook_User_DTO()
+                        {
+                          id = ev?.ActorID?.ToString(),
+                          name = _currentuser.Name,
+                        },
+                        new Hook_HookCreatedPayload() { }
+                    ),
+          EventType = HookEventType.hook,
+        });
+      }
+      catch (Exception ex)
+      {
+        _logger.Error(ex, "Failed to Enqueue Related webhooks for WebHookCreated");
+      }
+
+      return;
+    }
+  }
 }

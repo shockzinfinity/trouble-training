@@ -2,30 +2,30 @@
 // See LICENSE in the project root for license information.
 
 
-using IdentityModel;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text.Json;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Test;
+using IdentityModel;
 
 namespace IdentityServer.API.UI
 {
-    public class TestUsers
+  public class TestUsers
+  {
+    public static List<TestUser> Users
     {
-        public static List<TestUser> Users
+      get
+      {
+        var address = new
         {
-            get
-            {
-                var address = new
-                {
-                    street_address = "One Hacker Way",
-                    locality = "Heidelberg",
-                    postal_code = 69118,
-                    country = "Germany"
-                };
+          street_address = "One Hacker Way",
+          locality = "Heidelberg",
+          postal_code = 69118,
+          country = "Germany"
+        };
 
-                return new List<TestUser>
+        return new List<TestUser>
                 {
                     new TestUser
                     {
@@ -60,7 +60,7 @@ namespace IdentityServer.API.UI
                         }
                     }
                 };
-            }
-        }
+      }
     }
+  }
 }

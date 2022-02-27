@@ -1,23 +1,23 @@
-using Xunit;
 using System.Net.Http;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Snapshooter.Xunit;
-using System.Threading.Tasks;
+using Xunit;
 
 namespace APIServer.API.IntegrationTests.WebHooks
 {
-    [Collection("Sequential")]
-    public class CreateWebHookTests : BaseClassFixture
+  [Collection("Sequential")]
+  public class CreateWebHookTests : BaseClassFixture
+  {
+    public CreateWebHookTests(XunitFixture fixture) : base(fixture)
     {
-        public CreateWebHookTests(XunitFixture fixture) : base(fixture)
-        {
 
-        }
+    }
 
-        public static string GetTestMutation()
-        {
+    public static string GetTestMutation()
+    {
 
-            return @"mutation($request: CreateWebHookInput){
+      return @"mutation($request: CreateWebHookInput){
                 createWebHook(request:$request){
                     ... on CreateWebHookPayload{
                         hook{
@@ -39,69 +39,69 @@ namespace APIServer.API.IntegrationTests.WebHooks
                         }
                     }
                 }";
-        }
-
-        [Fact]
-        public async Task CreateWebHook_Authorised()
-        {
-
-            var mutation = GetTestMutation();
-
-            var variables = new
-            {
-                request = new { webHookUrl = "https://someurl/path", isActive = true }
-            };
-
-            await RunAs(
-              Common.GetDefaultUser(),
-              Common.GetDefaultClinet());
-
-            var response = await HttpClient.ProcessQuery(mutation, variables);
-
-            response.raw_response.StatusCode.Should().Be(200);
-
-            Snapshot.Match(response.data_content);
-        }
-
-        [Fact]
-        public async Task CreateWebHook_ValidationError()
-        {
-
-            var mutation = GetTestMutation();
-
-            var variables = new
-            {
-                request = new { webHookUrl = "some_invalid_url", isActive = true }
-            };
-
-            await RunAs(
-              Common.GetDefaultUser(),
-              Common.GetDefaultClinet());
-
-            var response = await HttpClient.ProcessQuery(mutation, variables);
-
-            response.raw_response.StatusCode.Should().Be(200);
-
-            Snapshot.Match(response.data_content);
-        }
-
-        [Fact]
-        public async Task CreateWebHook_Unauthorised()
-        {
-
-            var mutation = GetTestMutation();
-
-            var variables = new
-            {
-                request = new { webHookUrl = "https://someurl/path", isActive = true }
-            };
-
-            var response = await HttpClient.ProcessQuery(mutation, variables);
-
-            response.raw_response.StatusCode.Should().Be(200);
-
-            Snapshot.Match(response.data_content);
-        }
-
     }
+
+    [Fact]
+    public async Task CreateWebHook_Authorised()
+    {
+
+      var mutation = GetTestMutation();
+
+      var variables = new
+      {
+        request = new { webHookUrl = "https://someurl/path", isActive = true }
+      };
+
+      await RunAs(
+        Common.GetDefaultUser(),
+        Common.GetDefaultClinet());
+
+      var response = await HttpClient.ProcessQuery(mutation, variables);
+
+      response.raw_response.StatusCode.Should().Be(200);
+
+      Snapshot.Match(response.data_content);
+    }
+
+    [Fact]
+    public async Task CreateWebHook_ValidationError()
+    {
+
+      var mutation = GetTestMutation();
+
+      var variables = new
+      {
+        request = new { webHookUrl = "some_invalid_url", isActive = true }
+      };
+
+      await RunAs(
+        Common.GetDefaultUser(),
+        Common.GetDefaultClinet());
+
+      var response = await HttpClient.ProcessQuery(mutation, variables);
+
+      response.raw_response.StatusCode.Should().Be(200);
+
+      Snapshot.Match(response.data_content);
+    }
+
+    [Fact]
+    public async Task CreateWebHook_Unauthorised()
+    {
+
+      var mutation = GetTestMutation();
+
+      var variables = new
+      {
+        request = new { webHookUrl = "https://someurl/path", isActive = true }
+      };
+
+      var response = await HttpClient.ProcessQuery(mutation, variables);
+
+      response.raw_response.StatusCode.Should().Be(200);
+
+      Snapshot.Match(response.data_content);
+    }
+
+  }
 }

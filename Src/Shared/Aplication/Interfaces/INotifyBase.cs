@@ -1,16 +1,16 @@
-using MediatR;
 using System;
+using MediatR;
 
 namespace SharedCore.Aplication.Interfaces
 {
 
-    /// <summary>Base Notification</summary>
-    public interface INotificationBase : INotification
-    {
-        DateTime TimeStamp { get; set; }
+  /// <summary>Base Notification</summary>
+  public interface INotificationBase : INotification
+  {
+    DateTime TimeStamp { get; set; }
 
 #nullable enable
-        public string? ActivityId { get; set; }
+    public string? ActivityId { get; set; }
 #nullable disable
-    }
+  }
 }

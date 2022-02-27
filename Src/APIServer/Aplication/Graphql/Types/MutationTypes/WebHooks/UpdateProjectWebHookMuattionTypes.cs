@@ -1,24 +1,24 @@
-using HotChocolate.Types;
 using APIServer.Aplication.Commands.WebHooks;
+using HotChocolate.Types;
 
 namespace APIServer.Aplication.GraphQL.Types
 {
-    public class UpdateWebHookPayloadPayloadType : ObjectType<UpdateWebHookPayload>
+  public class UpdateWebHookPayloadPayloadType : ObjectType<UpdateWebHookPayload>
+  {
+    protected override void Configure(IObjectTypeDescriptor<UpdateWebHookPayload> descriptor)
     {
-        protected override void Configure(IObjectTypeDescriptor<UpdateWebHookPayload> descriptor)
-        {
-            descriptor.Field(e => e.hook).Type<WebHookType>();
-        }
+      descriptor.Field(e => e.hook).Type<WebHookType>();
     }
+  }
 
-    public class UpdateWebHookPayloadErrorUnion : UnionType<IUpdateWebHookError>
+  public class UpdateWebHookPayloadErrorUnion : UnionType<IUpdateWebHookError>
+  {
+    protected override void Configure(IUnionTypeDescriptor descriptor)
     {
-        protected override void Configure(IUnionTypeDescriptor descriptor)
-        {
-            descriptor.Type<ValidationErrorType>();
-            descriptor.Type<UnAuthorisedType>();
-            descriptor.Type<InternalServerErrorType>();
-            descriptor.Type<WebHookNotFoundType>();
-        }
+      descriptor.Type<ValidationErrorType>();
+      descriptor.Type<UnAuthorisedType>();
+      descriptor.Type<InternalServerErrorType>();
+      descriptor.Type<WebHookNotFoundType>();
     }
+  }
 }

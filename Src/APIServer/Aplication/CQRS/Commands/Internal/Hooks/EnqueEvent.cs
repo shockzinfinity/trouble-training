@@ -1,63 +1,63 @@
-using MediatR;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System;
-using SharedCore.Aplication.Core.Commands;
-using Microsoft.EntityFrameworkCore;
 using APIServer.Persistence;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using SharedCore.Aplication.Core.Commands;
 
 namespace APIServer.Aplication.Commands.Internall.Hooks
 {
 
+  /// <summary>
+  /// Command for saving WebHookCreated
+  /// </summary>
+  public class EnqueSaveEvent<T> : CommandBase
+  {
+
+    public T Event { get; set; }
+  }
+
+  /// <summary>
+  /// Command handler for <c>EnqueSaveEvent</c>
+  /// </summary>
+  public class EnqueSaveEventHandler<T> : IRequestHandler<EnqueSaveEvent<T>, Unit>
+  {
+
     /// <summary>
-    /// Command for saving WebHookCreated
+    /// Injected <c>ApiDbContext</c>
     /// </summary>
-    public class EnqueSaveEvent<T> : CommandBase
+    private readonly IDbContextFactory<ApiDbContext> _factory;
+
+    /// <summary>
+    /// Main Constructor
+    /// </summary>
+    public EnqueSaveEventHandler(IDbContextFactory<ApiDbContext> factory)
     {
 
-        public T Event { get; set; }
+      _factory = factory;
     }
 
     /// <summary>
-    /// Command handler for <c>EnqueSaveEvent</c>
+    /// Command handler for  <c>EnqueSaveEvent</c>
     /// </summary>
-    public class EnqueSaveEventHandler<T> : IRequestHandler<EnqueSaveEvent<T>, Unit>
+    public async Task<Unit> Handle(EnqueSaveEvent<T> request, CancellationToken cancellationToken)
     {
 
-        /// <summary>
-        /// Injected <c>ApiDbContext</c>
-        /// </summary>
-        private readonly IDbContextFactory<ApiDbContext> _factory;
+      if (request == null || request.Event == null)
+      {
+        throw new ArgumentNullException();
+      }
 
-        /// <summary>
-        /// Main Constructor
-        /// </summary>
-        public EnqueSaveEventHandler(IDbContextFactory<ApiDbContext> factory)
-        {
+      await using ApiDbContext dbContext =
+          _factory.CreateDbContext();
 
-            _factory = factory;
-        }
+      dbContext.Add(request.Event);
 
-        /// <summary>
-        /// Command handler for  <c>EnqueSaveEvent</c>
-        /// </summary>
-        public async Task<Unit> Handle(EnqueSaveEvent<T> request, CancellationToken cancellationToken)
-        {
+      await dbContext.SaveChangesAsync(cancellationToken);
 
-            if (request == null || request.Event == null)
-            {
-                throw new ArgumentNullException();
-            }
-
-            await using ApiDbContext dbContext =
-                _factory.CreateDbContext();
-
-            dbContext.Add(request.Event);
-
-            await dbContext.SaveChangesAsync(cancellationToken);
-
-            return Unit.Value;
-        }
+      return Unit.Value;
     }
+  }
 
 }

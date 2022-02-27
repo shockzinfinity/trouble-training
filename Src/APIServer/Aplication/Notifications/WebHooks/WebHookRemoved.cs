@@ -1,171 +1,171 @@
 using System;
-using MediatR;
+using System.Diagnostics;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Serilog;
-using System.Net.Http;
-using System.Diagnostics;
-using SharedCore.Aplication.Interfaces;
-using APIServer.Domain.Core.Models.Events;
 using APIServer.Aplication.Commands.Internall.Hooks;
+using APIServer.Domain.Core.Models.Events;
 using APIServer.Domain.Core.Models.WebHooks;
+using MediatR;
+using Serilog;
+using SharedCore.Aplication.Interfaces;
 
 namespace APIServer.Aplication.Notifications.WebHooks
 {
 
+  /// <summary>
+  /// Notifi webhook created
+  /// </summary>
+  public class WebHookRemovedNotifi : WebHookBaseNotifi
+  {
+
+  }
+
+  /// <summary>
+  /// Command handler for user <c>WebHookRemovedNotifi</c>
+  /// </summary>
+  public class WebHookRemovedEventLogHandler : INotificationHandler<WebHookRemovedNotifi>
+  {
+
     /// <summary>
-    /// Notifi webhook created
+    /// Injected <c>IScheduler</c>
     /// </summary>
-    public class WebHookRemovedNotifi : WebHookBaseNotifi
+    private readonly IScheduler _scheduler;
+
+    /// <summary>
+    /// Injected <c>ICurrentUser</c>
+    /// </summary>
+    private readonly ICurrentUser _currentuser;
+
+    /// <summary>
+    /// Injected <c>ILogger</c>
+    /// </summary>
+    private readonly ILogger _logger;
+
+    public WebHookRemovedEventLogHandler(
+        IScheduler scheduler,
+        ICurrentUser currentuser,
+        ILogger logger
+        )
     {
 
+      _scheduler = scheduler;
+
+      _currentuser = currentuser;
+
+      _logger = logger;
     }
 
     /// <summary>
-    /// Command handler for user <c>WebHookRemovedNotifi</c>
+    /// Command handler for <c>WebHookRemovedNotifi</c>
     /// </summary>
-    public class WebHookRemovedEventLogHandler : INotificationHandler<WebHookRemovedNotifi>
+    public async Task Handle(WebHookRemovedNotifi request, CancellationToken cancellationToken)
     {
 
-        /// <summary>
-        /// Injected <c>IScheduler</c>
-        /// </summary>
-        private readonly IScheduler _scheduler;
+      if (request == null)
+        return;
 
-        /// <summary>
-        /// Injected <c>ICurrentUser</c>
-        /// </summary>
-        private readonly ICurrentUser _currentuser;
+      await Task.CompletedTask;
 
-        /// <summary>
-        /// Injected <c>ILogger</c>
-        /// </summary>
-        private readonly ILogger _logger;
-
-        public WebHookRemovedEventLogHandler(
-            IScheduler scheduler,
-            ICurrentUser currentuser,
-            ILogger logger
-            )
+      try
+      {
+        _scheduler.Enqueue(new EnqueSaveEvent<WebHookRemoved>()
         {
+          Event = new WebHookRemoved()
+          {
+            ActorID = _currentuser.UserId,
+            WebHookId = request.WebHookId,
+            TimeStamp = request.TimeStamp != default ? request.TimeStamp : DateTime.Now,
+          },
+          ActivityId = Activity.Current != null ? Activity.Current.Id : null
+        });
+      }
+      catch (Exception ex)
+      {
+        _logger.Error(ex, "Failed to Enqueue IWebHookRemovedEventLog");
+      }
 
-            _scheduler = scheduler;
-
-            _currentuser = currentuser;
-
-            _logger = logger;
-        }
-
-        /// <summary>
-        /// Command handler for <c>WebHookRemovedNotifi</c>
-        /// </summary>
-        public async Task Handle(WebHookRemovedNotifi request, CancellationToken cancellationToken)
-        {
-
-            if (request == null)
-                return;
-
-            await Task.CompletedTask;
-
-            try
-            {
-                _scheduler.Enqueue(new EnqueSaveEvent<WebHookRemoved>()
-                {
-                    Event = new WebHookRemoved()
-                    {
-                        ActorID = _currentuser.UserId,
-                        WebHookId = request.WebHookId,
-                        TimeStamp = request.TimeStamp != default ? request.TimeStamp : DateTime.Now,
-                    },
-                    ActivityId = Activity.Current != null ? Activity.Current.Id : null
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Failed to Enqueue IWebHookRemovedEventLog");
-            }
-
-            return;
-        }
+      return;
     }
+  }
 
+
+  /// <summary>
+  /// Command handler for user <c>WebHookRemovedNotifi</c>
+  /// </summary>
+  public class WebHookRemovedHookQueueHandler : INotificationHandler<WebHookRemovedNotifi>
+  {
 
     /// <summary>
-    /// Command handler for user <c>WebHookRemovedNotifi</c>
+    /// Injected <c>IScheduler</c>
     /// </summary>
-    public class WebHookRemovedHookQueueHandler : INotificationHandler<WebHookRemovedNotifi>
+    private readonly IScheduler _scheduler;
+
+    /// <summary>
+    /// Injected <c>ICurrentUser</c>
+    /// </summary>
+    private readonly ICurrentUser _currentuser;
+
+    /// <summary>
+    /// Injected <c>ILogger</c>
+    /// </summary>
+    private readonly ILogger _logger;
+
+    public WebHookRemovedHookQueueHandler(
+        IScheduler scheduler,
+        ICurrentUser currentuser,
+        ILogger logger,
+        IHttpClientFactory clientFactory
+        )
     {
 
-        /// <summary>
-        /// Injected <c>IScheduler</c>
-        /// </summary>
-        private readonly IScheduler _scheduler;
+      _scheduler = scheduler;
 
-        /// <summary>
-        /// Injected <c>ICurrentUser</c>
-        /// </summary>
-        private readonly ICurrentUser _currentuser;
+      _currentuser = currentuser;
 
-        /// <summary>
-        /// Injected <c>ILogger</c>
-        /// </summary>
-        private readonly ILogger _logger;
-
-        public WebHookRemovedHookQueueHandler(
-            IScheduler scheduler,
-            ICurrentUser currentuser,
-            ILogger logger,
-            IHttpClientFactory clientFactory
-            )
-        {
-
-            _scheduler = scheduler;
-
-            _currentuser = currentuser;
-
-            _logger = logger;
-        }
-
-        /// <summary>
-        /// Command handler for <c>WebHookRemovedNotifi</c>
-        /// </summary>
-        public async Task Handle(WebHookRemovedNotifi request, CancellationToken cancellationToken)
-        {
-
-            if (request == null)
-                return;
-
-            await Task.CompletedTask;
-
-            WebHookRemoved ev = new WebHookRemoved()
-            {
-                ActorID = _currentuser.UserId,
-                WebHookId = request.WebHookId,
-                TimeStamp = request.TimeStamp != default ? request.TimeStamp : DateTime.Now,
-            };
-
-            try
-            {
-                _scheduler.Enqueue(new EnqueueRelatedWebHooks()
-                {
-                    Event = new Hook_HookRemoved(
-                                HookResourceAction.hook_removed,
-                                new Hook_User_DTO()
-                                {
-                                    id = ev?.ActorID?.ToString(),
-                                    name = _currentuser.Name,
-                                },
-                                new Hook_HookRemovedPayload() { }
-                            ),
-                    EventType = HookEventType.hook,
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Failed to Enqueue Related webhooks for WebHookRemoved");
-            }
-
-            return;
-        }
+      _logger = logger;
     }
+
+    /// <summary>
+    /// Command handler for <c>WebHookRemovedNotifi</c>
+    /// </summary>
+    public async Task Handle(WebHookRemovedNotifi request, CancellationToken cancellationToken)
+    {
+
+      if (request == null)
+        return;
+
+      await Task.CompletedTask;
+
+      WebHookRemoved ev = new WebHookRemoved()
+      {
+        ActorID = _currentuser.UserId,
+        WebHookId = request.WebHookId,
+        TimeStamp = request.TimeStamp != default ? request.TimeStamp : DateTime.Now,
+      };
+
+      try
+      {
+        _scheduler.Enqueue(new EnqueueRelatedWebHooks()
+        {
+          Event = new Hook_HookRemoved(
+                        HookResourceAction.hook_removed,
+                        new Hook_User_DTO()
+                        {
+                          id = ev?.ActorID?.ToString(),
+                          name = _currentuser.Name,
+                        },
+                        new Hook_HookRemovedPayload() { }
+                    ),
+          EventType = HookEventType.hook,
+        });
+      }
+      catch (Exception ex)
+      {
+        _logger.Error(ex, "Failed to Enqueue Related webhooks for WebHookRemoved");
+      }
+
+      return;
+    }
+  }
 }

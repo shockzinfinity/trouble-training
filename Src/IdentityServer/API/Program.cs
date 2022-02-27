@@ -1,40 +1,40 @@
 ﻿
-using Serilog;
 using System;
 using IdentityServer.Configuration;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using Serilog;
 
 namespace IdentityServer.API
 {
-    public class Program
+  public class Program
+  {
+    public static void Main(string[] args)
     {
-        public static void Main(string[] args)
-        {
-            try
-            {
-                var host = CreateHostBuilder(args).Build();
+      try
+      {
+        var host = CreateHostBuilder(args).Build();
 
-                ServiceExtension.ConfigureLogging(host);
+        ServiceExtension.ConfigureLogging(host);
 
-                host.Run();
-            }
-            catch (Exception ex)
-            {
-                Log.Fatal(ex, "Runtime unhandled exception");
-            }
-            finally
-            {
-                Log.CloseAndFlush();
-            }
-        }
-
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .UseSerilog()
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                }).UseSerilog();
+        host.Run();
+      }
+      catch (Exception ex)
+      {
+        Log.Fatal(ex, "Runtime unhandled exception");
+      }
+      finally
+      {
+        Log.CloseAndFlush();
+      }
     }
+
+    public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+            .UseSerilog()
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+              webBuilder.UseStartup<Startup>();
+            }).UseSerilog();
+  }
 }

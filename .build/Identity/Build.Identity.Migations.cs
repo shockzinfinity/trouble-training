@@ -8,50 +8,50 @@ using Nuke.Common.Tools.EntityFramework;
 partial class Build : NukeBuild
 {
 
-    //---------------
-    // Enviroment
-    //---------------
+  //---------------
+  // Enviroment
+  //---------------
 
-    AbsolutePath IdentityMigrationDir => RootDirectory / "Src" / "IdentityServer" / "Persistence";
+  AbsolutePath IdentityMigrationDir => RootDirectory / "Src" / "IdentityServer" / "Persistence";
 
-    //---------------
-    // Build process
-    //---------------
+  //---------------
+  // Build process
+  //---------------
 
-    Target Identity_Migrate_DB => _ => _
-        .DependsOn(
-            Identity_Compile,
-            Identity_Restore,
-            Restore_Tools
-        // Postgresql_Init // Only in case postgres is used
-        )
-        .After(
-            All,
-            Identity_All,
-            Postgresql_Init
-        )
-        .Executes(() =>
-        {
-            EntityFrameworkTasks
-                .EntityFrameworkDatabaseUpdate(e => e
-                    .SetProcessWorkingDirectory(IdentityMigrationDir)
-                    .SetContext("AppConfigurationDbContext")
-                    .SetProcessToolPath(DotNetTasks.DotNetPath)
-                );
+  Target Identity_Migrate_DB => _ => _
+      .DependsOn(
+          Identity_Compile,
+          Identity_Restore,
+          Restore_Tools
+      // Postgresql_Init // Only in case postgres is used
+      )
+      .After(
+          All,
+          Identity_All,
+          Postgresql_Init
+      )
+      .Executes(() =>
+      {
+        EntityFrameworkTasks
+              .EntityFrameworkDatabaseUpdate(e => e
+                  .SetProcessWorkingDirectory(IdentityMigrationDir)
+                  .SetContext("AppConfigurationDbContext")
+                  .SetProcessToolPath(DotNetTasks.DotNetPath)
+              );
 
-            EntityFrameworkTasks
-                .EntityFrameworkDatabaseUpdate(e => e
-                    .SetProcessWorkingDirectory(IdentityMigrationDir)
-                    .SetContext("AppPersistedGrantDbContext")
-                    .SetProcessToolPath(DotNetTasks.DotNetPath)
-                );
+        EntityFrameworkTasks
+              .EntityFrameworkDatabaseUpdate(e => e
+                  .SetProcessWorkingDirectory(IdentityMigrationDir)
+                  .SetContext("AppPersistedGrantDbContext")
+                  .SetProcessToolPath(DotNetTasks.DotNetPath)
+              );
 
-            EntityFrameworkTasks
-                .EntityFrameworkDatabaseUpdate(e => e
-                    .SetProcessWorkingDirectory(IdentityMigrationDir)
-                    .SetContext("AppIdnetityDbContext")
-                    .SetProcessToolPath(DotNetTasks.DotNetPath)
-                );
-        });
+        EntityFrameworkTasks
+              .EntityFrameworkDatabaseUpdate(e => e
+                  .SetProcessWorkingDirectory(IdentityMigrationDir)
+                  .SetContext("AppIdnetityDbContext")
+                  .SetProcessToolPath(DotNetTasks.DotNetPath)
+              );
+      });
 
 }

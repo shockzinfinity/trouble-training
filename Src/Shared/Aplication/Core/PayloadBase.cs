@@ -6,90 +6,90 @@ using HotChocolate;
 namespace SharedCore.Aplication.Payload
 {
 
-    public interface IBasePayload
+  public interface IBasePayload
+  {
+
+    void AddError(object o);
+
+    bool HasError();
+
+  }
+
+  public abstract class BasePayload<U, T> : IBasePayload where U : BasePayload<U, T>, new()
+  {
+
+    public BasePayload()
     {
-
-        void AddError(object o);
-
-        bool HasError();
-
+      this.errors = new List<T>();
     }
 
-    public abstract class BasePayload<U, T> : IBasePayload where U : BasePayload<U, T>, new()
+    /// <summary>
+    /// List of possible union errors
+    /// </summary>
+    /// <value></value>
+    public List<T> errors { get; set; }
+
+    /// <summary>
+    /// Add errors collection and return itself
+    /// </summary>
+    [GraphQLIgnore]
+    public U PushError(params T[] errors)
+    {
+      this.errors.AddRange(errors);
+
+      return (U)this;
+    }
+
+    /// <summary>
+    /// Check if any error exist
+    /// </summary>
+    [GraphQLIgnore]
+    public bool HasError()
     {
 
-        public BasePayload()
-        {
-            this.errors = new List<T>();
-        }
+      if (errors != null)
+      {
+        return errors.Any();
+      }
 
-        /// <summary>
-        /// List of possible union errors
-        /// </summary>
-        /// <value></value>
-        public List<T> errors { get; set; }
-
-        /// <summary>
-        /// Add errors collection and return itself
-        /// </summary>
-        [GraphQLIgnore]
-        public U PushError(params T[] errors)
-        {
-            this.errors.AddRange(errors);
-
-            return (U)this;
-        }
-
-        /// <summary>
-        /// Check if any error exist
-        /// </summary>
-        [GraphQLIgnore]
-        public bool HasError()
-        {
-
-            if (errors != null)
-            {
-                return errors.Any();
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Return new instance with errors
-        /// </summary>
-        /// <param name="errors"></param>
-        [GraphQLIgnore]
-        public static U Error(params T[] errors)
-        {
-            U u = new U();
-            u.errors.AddRange(errors);
-            return u;
-        }
-
-        /// <summary>
-        /// Returns new instance
-        /// </summary>
-        [GraphQLIgnore]
-        public static U Success()
-        {
-            return new U();
-        }
-
-        [GraphQLIgnore]
-        public void AddError(object o)
-        {
-
-            if (o is T)
-            {
-                T tmp = (T)o;
-                this.errors.Add(tmp);
-            }
-            else
-            {
-                throw new NotSupportedException("Error type does not match base payload supported types");
-            }
-        }
+      return false;
     }
+
+    /// <summary>
+    /// Return new instance with errors
+    /// </summary>
+    /// <param name="errors"></param>
+    [GraphQLIgnore]
+    public static U Error(params T[] errors)
+    {
+      U u = new U();
+      u.errors.AddRange(errors);
+      return u;
+    }
+
+    /// <summary>
+    /// Returns new instance
+    /// </summary>
+    [GraphQLIgnore]
+    public static U Success()
+    {
+      return new U();
+    }
+
+    [GraphQLIgnore]
+    public void AddError(object o)
+    {
+
+      if (o is T)
+      {
+        T tmp = (T)o;
+        this.errors.Add(tmp);
+      }
+      else
+      {
+        throw new NotSupportedException("Error type does not match base payload supported types");
+      }
+    }
+  }
 
 }

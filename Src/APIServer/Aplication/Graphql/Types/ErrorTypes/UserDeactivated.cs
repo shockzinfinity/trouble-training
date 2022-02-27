@@ -6,13 +6,13 @@ using SharedCore.Aplication.GraphQL.Types;
 namespace APIServer.Aplication.GraphQL.Types
 {
 
-    public class UserDeactivatedType : ObjectType<UserDeactivated>
+  public class UserDeactivatedType : ObjectType<UserDeactivated>
+  {
+    protected override void Configure(IObjectTypeDescriptor<UserDeactivated> descriptor)
     {
-        protected override void Configure(IObjectTypeDescriptor<UserDeactivated> descriptor)
-        {
 
-            descriptor.Implements<BaseErrorInterfaceType>();
-        }
+      descriptor.Implements<BaseErrorInterfaceType>();
     }
+  }
 
 }

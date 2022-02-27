@@ -1,23 +1,23 @@
-using Xunit;
 using System.Net.Http;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Snapshooter.Xunit;
-using System.Threading.Tasks;
+using Xunit;
 namespace APIServer.API.IntegrationTests.WebHooks
 {
-    [Collection("Sequential")]
-    public class QueryWebHookRecordsTests : BaseClassFixture
+  [Collection("Sequential")]
+  public class QueryWebHookRecordsTests : BaseClassFixture
+  {
+
+    public QueryWebHookRecordsTests(XunitFixture fixture) : base(fixture)
     {
 
-        public QueryWebHookRecordsTests(XunitFixture fixture) : base(fixture)
-        {
+    }
 
-        }
+    public static string GetTestQuery()
+    {
 
-        public static string GetTestQuery()
-        {
-
-            return @"query($hook_id: ID!){
+      return @"query($hook_id: ID!){
                 webHookRecords(hook_id:$hook_id){
                     edges{
                         node{
@@ -26,45 +26,45 @@ namespace APIServer.API.IntegrationTests.WebHooks
                     }
                 }
             }";
-        }
-
-        [Fact]
-        public async Task QueryWebHookRecords_Authorised()
-        {
-            var mutation = GetTestQuery();
-
-            await RunAs(
-              Common.GetDefaultUser(),
-              Common.GetDefaultClinet());
-
-            var variables = new
-            {
-                hook_id = "R1FMX1dlYkhvb2sKbDE="
-            };
-
-            var response = await HttpClient.ProcessQuery(mutation, variables);
-
-            response.raw_response.StatusCode.Should().Be(200);
-
-            Snapshot.Match(response.data_content);
-        }
-
-        [Fact]
-        public async Task QueryWebHookRecords_Unauthorised()
-        {
-            var mutation = GetTestQuery();
-
-            var variables = new
-            {
-                hook_id = "R1FMX1dlYkhvb2sKbDE="
-            };
-
-            var response = await HttpClient.ProcessQuery(mutation, variables);
-
-            response.raw_response.StatusCode.Should().Be(200);
-
-            Snapshot.Match(response.data_content);
-        }
-
     }
+
+    [Fact]
+    public async Task QueryWebHookRecords_Authorised()
+    {
+      var mutation = GetTestQuery();
+
+      await RunAs(
+        Common.GetDefaultUser(),
+        Common.GetDefaultClinet());
+
+      var variables = new
+      {
+        hook_id = "R1FMX1dlYkhvb2sKbDE="
+      };
+
+      var response = await HttpClient.ProcessQuery(mutation, variables);
+
+      response.raw_response.StatusCode.Should().Be(200);
+
+      Snapshot.Match(response.data_content);
+    }
+
+    [Fact]
+    public async Task QueryWebHookRecords_Unauthorised()
+    {
+      var mutation = GetTestQuery();
+
+      var variables = new
+      {
+        hook_id = "R1FMX1dlYkhvb2sKbDE="
+      };
+
+      var response = await HttpClient.ProcessQuery(mutation, variables);
+
+      response.raw_response.StatusCode.Should().Be(200);
+
+      Snapshot.Match(response.data_content);
+    }
+
+  }
 }

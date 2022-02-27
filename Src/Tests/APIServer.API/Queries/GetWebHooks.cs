@@ -1,27 +1,24 @@
-using Xunit;
-using MediatR;
 using System.Net.Http;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Snapshooter.Xunit;
-using APIServer.Persistence;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+using Xunit;
 
 namespace APIServer.API.IntegrationTests.WebHooks
 {
-    [Collection("Sequential")]
-    public class QueryWebHookTests : BaseClassFixture
+  [Collection("Sequential")]
+  public class QueryWebHookTests : BaseClassFixture
+  {
+
+    public QueryWebHookTests(XunitFixture fixture) : base(fixture)
     {
 
-        public QueryWebHookTests(XunitFixture fixture) : base(fixture)
-        {
+    }
 
-        }
+    public static string GetTestQuery()
+    {
 
-        public static string GetTestQuery()
-        {
-
-            return @"query{
+      return @"query{
                 webhooks{
                     edges{
                     node{
@@ -34,35 +31,35 @@ namespace APIServer.API.IntegrationTests.WebHooks
                     }
                 }
             }";
-        }
-
-        [Fact]
-        public async Task QueryWebHook_Authorised()
-        {
-            var mutation = GetTestQuery();
-
-            await RunAs(
-              Common.GetDefaultUser(),
-              Common.GetDefaultClinet());
-
-            var response = await HttpClient.ProcessQuery(mutation);
-
-            response.raw_response.StatusCode.Should().Be(200);
-
-            Snapshot.Match(response.data_content);
-        }
-
-        [Fact]
-        public async Task QueryWebHook_Unauthorised()
-        {
-            var mutation = GetTestQuery();
-
-            var response = await HttpClient.ProcessQuery(mutation);
-
-            response.raw_response.StatusCode.Should().Be(200);
-
-            Snapshot.Match(response.data_content);
-        }
-
     }
+
+    [Fact]
+    public async Task QueryWebHook_Authorised()
+    {
+      var mutation = GetTestQuery();
+
+      await RunAs(
+        Common.GetDefaultUser(),
+        Common.GetDefaultClinet());
+
+      var response = await HttpClient.ProcessQuery(mutation);
+
+      response.raw_response.StatusCode.Should().Be(200);
+
+      Snapshot.Match(response.data_content);
+    }
+
+    [Fact]
+    public async Task QueryWebHook_Unauthorised()
+    {
+      var mutation = GetTestQuery();
+
+      var response = await HttpClient.ProcessQuery(mutation);
+
+      response.raw_response.StatusCode.Should().Be(200);
+
+      Snapshot.Match(response.data_content);
+    }
+
+  }
 }

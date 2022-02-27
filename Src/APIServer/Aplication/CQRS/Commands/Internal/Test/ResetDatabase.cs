@@ -1,92 +1,92 @@
-using MediatR;
 using System.Threading;
 using System.Threading.Tasks;
 using APIServer.Persistence;
-using Microsoft.Extensions.Hosting;
+using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using SharedCore.Aplication.Core.Commands;
 
 namespace APIServer.Aplication.Commands.Internall
 {
-    /////////////////////////////////////////
-    // This is TEST only internall command
-    /////////////////////////////////////////
+  /////////////////////////////////////////
+  // This is TEST only internall command
+  /////////////////////////////////////////
 
 
-    // This is TEST only internall command
+  // This is TEST only internall command
+  /// <summary>
+  /// Command for resetting database
+  /// </summary>
+  public class ResetDatabase : CommandBase
+  {
+
+  }
+
+  /// <summary>
+  /// Command handler for <c>ResetDatabase</c>
+  /// </summary>
+  public class ResetDatabaseHandler : IRequestHandler<ResetDatabase, Unit>
+  {
+
     /// <summary>
-    /// Command for resetting database
+    /// Injected <c>ApiDbContext</c>
     /// </summary>
-    public class ResetDatabase : CommandBase
-    {
+    private readonly IDbContextFactory<ApiDbContext> _factory;
 
+    /// <summary>
+    /// Injected <c>IWebHostEnvironment</c>
+    /// </summary>
+    private readonly IWebHostEnvironment _env;
+
+    /// <summary>
+    /// Main Constructor
+    /// </summary>
+    public ResetDatabaseHandler(
+        IDbContextFactory<ApiDbContext> factory,
+        IWebHostEnvironment env)
+    {
+      _factory = factory;
+
+      _env = env;
     }
 
     /// <summary>
     /// Command handler for <c>ResetDatabase</c>
     /// </summary>
-    public class ResetDatabaseHandler : IRequestHandler<ResetDatabase, Unit>
+    public async Task<Unit> Handle(ResetDatabase request, CancellationToken cancellationToken)
     {
+      if (!_env.IsProduction())
+      {
+        await using ApiDbContext dbContext =
+            _factory.CreateDbContext();
 
-        /// <summary>
-        /// Injected <c>ApiDbContext</c>
-        /// </summary>
-        private readonly IDbContextFactory<ApiDbContext> _factory;
-
-        /// <summary>
-        /// Injected <c>IWebHostEnvironment</c>
-        /// </summary>
-        private readonly IWebHostEnvironment _env;
-
-        /// <summary>
-        /// Main Constructor
-        /// </summary>
-        public ResetDatabaseHandler(
-            IDbContextFactory<ApiDbContext> factory,
-            IWebHostEnvironment env)
+        // Clear all Webhooks
+        if (await dbContext.WebHooks.AnyAsync())
         {
-            _factory = factory;
+          dbContext.WebHooks.RemoveRange(dbContext.WebHooks);
 
-            _env = env;
+          await dbContext.SaveChangesAsync();
         }
 
-        /// <summary>
-        /// Command handler for <c>ResetDatabase</c>
-        /// </summary>
-        public async Task<Unit> Handle(ResetDatabase request, CancellationToken cancellationToken)
+        // Clear all WebHooksHistory
+        if (await dbContext.WebHooksHistory.AnyAsync())
         {
-            if (!_env.IsProduction())
-            {
-                await using ApiDbContext dbContext =
-                    _factory.CreateDbContext();
+          dbContext.WebHooksHistory.RemoveRange(dbContext.WebHooksHistory);
 
-                // Clear all Webhooks
-                if (await dbContext.WebHooks.AnyAsync())
-                {
-                    dbContext.WebHooks.RemoveRange(dbContext.WebHooks);
-
-                    await dbContext.SaveChangesAsync();
-                }
-
-                // Clear all WebHooksHistory
-                if (await dbContext.WebHooksHistory.AnyAsync())
-                {
-                    dbContext.WebHooksHistory.RemoveRange(dbContext.WebHooksHistory);
-
-                    await dbContext.SaveChangesAsync();
-                }
-
-                // Clear all Events
-                if (await dbContext.Events.AnyAsync())
-                {
-                    dbContext.Events.RemoveRange(dbContext.Events);
-
-                    await dbContext.SaveChangesAsync();
-                }
-            }
-
-            return Unit.Value;
+          await dbContext.SaveChangesAsync();
         }
+
+        // Clear all Events
+        if (await dbContext.Events.AnyAsync())
+        {
+          dbContext.Events.RemoveRange(dbContext.Events);
+
+          await dbContext.SaveChangesAsync();
+        }
+      }
+
+      return Unit.Value;
     }
+  }
 }
